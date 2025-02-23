@@ -31,10 +31,6 @@ const isSelected = (video: ChzzkVideo) => {
           <span class="separator">•</span>
           <span>{{ video.readCount }} views</span>
         </div>
-        <!-- <div class="channel">
-          <img :src="video.channel.channelImageUrl" alt="Channel Icon" class="channel-icon" />
-          <span class="channel-name">{{ video.channel.channelName }}</span>
-        </div> -->
       </div>
     </div>
   </div>

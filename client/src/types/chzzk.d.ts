@@ -126,7 +126,6 @@ export interface MyChzzkVideoMetadata {
   mimeType?: string
   bandwidth?: number
   baseURL: string
-  duration?: number
 }
 
 

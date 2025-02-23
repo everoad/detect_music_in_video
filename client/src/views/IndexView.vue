@@ -25,10 +25,10 @@ const loadVideos = async (pageNum: number) => {
       hasMore.value = false
     } else {
       videos.value = [...videos.value, ...newVideos]
-      page.value++
-      if (!selectedVideo.value && newVideos.length > 0) {
-        setSelectedVideo(newVideos[0]) // 첫 번째 비디오 기본 선택
+      if (!selectedVideo.value && newVideos.length > 0 && page.value === 0) {
+        await setSelectedVideo(newVideos[0]) // 첫 번째 비디오 기본 선택
       }
+      page.value++
     }
   } catch (error) {
     console.error('Failed to load videos:', error)
@@ -40,7 +40,11 @@ const loadVideos = async (pageNum: number) => {
 // 비디오 선택
 const setSelectedVideo = async (video: ChzzkVideo) => {
   const res = await fetchChzzkVideo(video.videoNo)
-  selectedVideo.value = res
+  if (res.inKey) {
+    selectedVideo.value = res
+  } else {
+    setSelectedVideo(videos.value[videos.value.indexOf(video) + 1])
+  }
 }
 
 // Intersection Observer
@@ -80,14 +84,14 @@ provide(ChzzkVideoKey, {
 })
 </script>
 
-<<template>
+<template>
   <div class="container">
     <!-- 왼쪽: 상세 보기 -->
-    <ChzzkVideoDetail :selected-video="selectedVideo" />
+    <ChzzkVideoDetail />
 
     <!-- 오른쪽: 비디오 목록 -->
     <div class="list-view">
-      <ChzzkVideoSide :videos="videos" @select-video="setSelectedVideo" :selected-video="selectedVideo" />
+      <ChzzkVideoSide />
       <div ref="loadMoreTrigger" class="load-more-trigger" v-if="hasMore">
         <p v-if="isLoading">Loading more videos...</p>
       </div>
