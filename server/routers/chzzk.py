@@ -1,6 +1,6 @@
 from fastapi import Query, Request, APIRouter
 from httpx import AsyncClient, RequestError
-from ..services import chzzk as chzzk_service
+# from ..services import chzzk as chzzk_service
 
 router = APIRouter(
     prefix="/chzzk",

@@ -86,12 +86,18 @@ export interface ChzzkRepresentation {
   }
 }
 
+export interface ChzzkOtherAttributes {
+  m3u: string
+}
+
 export interface ChzzkAdaptationSet {
   mimeType: string
   baseURL: ChzzkBaseURL[]
   representation: ChzzkRepresentation[]
-  otherAttributes: Record<string, any>
+  otherAttributes: ChzzkOtherAttributes
 }
+
+
 
 export interface ChzzkPeriod {
   id: string
@@ -114,13 +120,13 @@ export interface ChzzkVideoMetadata {
 }
 
 export interface MyChzzkVideoMetadata {
-  frameRate: number
-  height: number
-  width: number
-  mimeType: string
-  bandwidth: number
+  frameRate?: number
+  height?: number
+  width?: number
+  mimeType?: string
+  bandwidth?: number
   baseURL: string
-  duration: number
+  duration?: number
 }
 
 

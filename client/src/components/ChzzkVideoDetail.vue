@@ -3,7 +3,8 @@ import { fetchVideoMetadata, fetchVideoTimeline } from '@/api/chzzk.api';
 import { useChzzkVideo } from '@/composables/use-chzzk-video';
 import type { ChzzkVideoTimeline, MyChzzkVideoMetadata } from '@/types/chzzk';
 import { formatDate, formatDuration } from '@/utils/common-utils';
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
+import HlsVideo from './HlsVideo.vue';
 
 
 const {videos, selectedVideo, setSelectedVideo } = useChzzkVideo()
@@ -12,7 +13,6 @@ const videoMetadatas = ref<MyChzzkVideoMetadata[]>([])
 const selectedVideoUrl = ref<string | null>(null)
 const videoTimeline = ref<ChzzkVideoTimeline>()
 const currentSegmentIndex = ref<number>(0) // 현재 재생 중인 구간 인덱스
-const isPlaying = ref<boolean>(false) // 재생 상태 추적
 const videoRef = ref<HTMLVideoElement | null>(null)
 
 const loadVideoMetadata = async () => {
@@ -36,7 +36,7 @@ const loadVideoMetadata = async () => {
       .sort((a, b) => b.height - a.height)
     
     if (videoMetadatas.value.length > 0) {
-      selectedVideoUrl.value = videoMetadatas.value[0].baseURL
+      selectedVideoUrl.value = videoMetadatas.value[1].baseURL
     }
   }
 }
@@ -46,13 +46,134 @@ const loadVideoTimeline = async () => {
     const { videoNo } = selectedVideo.value
     const timeline = await fetchVideoTimeline(videoNo)
     // videoTimeline.value = timeline || { videoNo, timelines: [] } // 기본값 설정
-    videoTimeline.value = {
+    const lines = {
       videoNo: videoNo,
       timelines: [
-        {"start": 60, "end": 80},
-        {"start": 120, "end": 130}
+        {
+          "start": 1854.2910358656084,
+          "end": 2023.7356995105888
+        },
+        {
+          "start": 2274.782609103577,
+          "end": 2423.1066914443672
+        },
+        {
+          "start": 2707.2745126280174,
+          "end": 2909.360074652201
+        },
+        {
+          "start": 3648.100407087399,
+          "end": 3904.907475217894
+        },
+        {
+          "start": 4196.275494573427,
+          "end": 4449.722470223709
+        },
+        {
+          "start": 4851.493528214783,
+          "end": 5072.299605485861
+        },
+        {
+          "start": 5124.1410323234195,
+          "end": 5426.069342331048
+        },
+        {
+          "start": 5659.355763100058,
+          "end": 5775.998973484562
+        },
+        {
+          "start": 5945.923650341002,
+          "end": 6253.612118886136
+        },
+        {
+          "start": 6353.454866869582,
+          "end": 6510.89920022809
+        },
+        {
+          "start": 6633.302569150102,
+          "end": 6867.549016342029
+        },
+        {
+          "start": 7008.672900510936,
+          "end": 7172.837418829869
+        },
+        {
+          "start": 7338.921989994637,
+          "end": 7702.77200428046
+        },
+        {
+          "start": 7946.618715701565,
+          "end": 8133.823868170523
+        },
+        {
+          "start": 8334.46939056033,
+          "end": 8574.956009501224
+        },
+        {
+          "start": 8733.360369282651,
+          "end": 9022.328322580888
+        },
+        {
+          "start": 9603.144308446119,
+          "end": 9840.270834906802
+        },
+        {
+          "start": 9884.912063572476,
+          "end": 10121.558576821697
+        },
+        {
+          "start": 10192.60053211761,
+          "end": 10523.32963481277
+        },
+        {
+          "start": 10593.891576897224,
+          "end": 10825.737958031857
+        },
+        {
+          "start": 11016.303202981027,
+          "end": 11120.946083079061
+        },
+        {
+          "start": 11151.666928612429,
+          "end": 11496.796427651356
+        },
+        {
+          "start": 11753.60349578185,
+          "end": 11994.090114722743
+        },
+        {
+          "start": 12120.813602547883,
+          "end": 12433.302203207608
+        },
+        {
+          "start": 12861.954001040376,
+          "end": 13299.246036679406
+        },
+        {
+          "start": 13483.571109879611,
+          "end": 13618.454822299553
+        },
+        {
+          "start": 13730.297900569469,
+          "end": 14021.185906713545
+        },
+        {
+          "start": 14087.427729894867,
+          "end": 14325.034269567008
+        },
+        {
+          "start": 14645.683094821532,
+          "end": 14908.250321489533
+        }
       ]
     }
+    lines.timelines = lines.timelines.map((segment) => {
+      return {
+        start: Math.floor(segment.start) - 1,
+        end: Math.ceil(segment.end) + 1
+      }
+    })
+    videoTimeline.value = lines
   }
 }
 
@@ -61,7 +182,6 @@ watch(selectedVideo, async (newVideo) => {
   if (newVideo) {
     show.value = false
     currentSegmentIndex.value = 0
-    isPlaying.value = false
     await Promise.all([loadVideoMetadata(), loadVideoTimeline()])
     nextTick(() => {
       show.value = true
@@ -72,24 +192,67 @@ watch(selectedVideo, async (newVideo) => {
   }
 })
 
+const totalMusicDuration = computed(() => {
+  return videoTimeline.value?.timelines.reduce((acc, segment) => acc + (segment.end - segment.start), 0) || 0
+})
+
 const onTimeUpdate = () => {
-  if (videoRef.value && videoTimeline.value && isPlaying.value) {
+  if (videoRef.value && videoTimeline.value) {
     const currentTime = videoRef.value.currentTime
     const timelines = videoTimeline.value.timelines
-    const currentSegment = timelines[currentSegmentIndex.value]
-    if (videoRef.value.currentTime >= videoRef.value.duration) {
+    const totalDuration = videoRef.value.duration
+
+    // 전체 시간을 초과하면 바로 종료
+    if (currentTime >= totalDuration - 5) {
       return
     }
-    // 현재 구간의 끝에 도달했는지 확인
-    if (currentSegment && currentTime >= currentSegment.end) {
-      const nextIndex = currentSegmentIndex.value + 1
-      if (nextIndex < timelines.length) {
-        // 다음 구간으로 이동
-        currentSegmentIndex.value = nextIndex
-        const nextSegment = timelines[nextIndex]
+
+    // 현재 구간 찾기
+    const currentIndex = timelines.findIndex((segment) => {
+      return currentTime >= segment.start && currentTime <= segment.end
+    })
+
+    if (currentIndex !== -1) {
+      // 현재 시간이 구간 내에 있음
+      currentSegmentIndex.value = currentIndex
+      const currentSegment = timelines[currentSegmentIndex.value]
+      if (currentTime >= currentSegment.end) {
+        const nextIndex = currentSegmentIndex.value + 1
+        if (nextIndex < timelines.length) {
+          currentSegmentIndex.value = nextIndex
+          const nextSegment = timelines[nextIndex]
+          videoRef.value.currentTime = nextSegment.start
+          console.log(`Moved to segment ${nextIndex}: ${nextSegment.start} to ${nextSegment.end}`)
+        } else {
+          videoRef.value.currentTime = totalDuration
+          console.log('Moved to end of video')
+        }
+      }
+    } else {
+      // 구간 외부에 있는 경우
+      const previousSegmentIndex = timelines.findIndex(segment => currentTime < segment.start) - 1
+      const nextSegmentIndex = timelines.findIndex(segment => currentTime < segment.start)
+
+      if (nextSegmentIndex === -1) {
+        // 마지막 구간 이후로 이동
+        videoRef.value.currentTime = totalDuration
+        console.log('Moved to end of video (beyond last segment)')
+      } else if (previousSegmentIndex >= 0 && currentTime > timelines[previousSegmentIndex].end) {
+        // 구간 사이에 있는 경우 다음 구간으로 이동
+        currentSegmentIndex.value = nextSegmentIndex
+        const nextSegment = timelines[nextSegmentIndex]
         videoRef.value.currentTime = nextSegment.start
+        console.log(`Moved between segments to ${nextSegmentIndex}: ${nextSegment.start} to ${nextSegment.end}`)
+      } else if (previousSegmentIndex < 0) {
+        // 첫 구간 이전에 있는 경우 첫 구간으로 이동
+        currentSegmentIndex.value = 0
+        const firstSegment = timelines[0]
+        videoRef.value.currentTime = firstSegment.start
+        console.log(`Moved before first segment to 0: ${firstSegment.start} to ${firstSegment.end}`)
       } else {
-        videoRef.value.currentTime = videoRef.value.duration
+        // 이전 구간으로 이동 시 인덱스 업데이트
+        currentSegmentIndex.value = previousSegmentIndex
+        console.log(`Moved to previous segment ${previousSegmentIndex}: ${timelines[previousSegmentIndex].start} to ${timelines[previousSegmentIndex].end}`)
       }
     }
   }
@@ -105,7 +268,7 @@ const onEnded = () => {
   }
 }
 
-const onloadeddata = () => {
+const onLoadedData = () => {
   if (videoRef.value) {
     videoRef.value?.play().catch((error) => {
       console.error('Failed to play video:', error)
@@ -114,33 +277,39 @@ const onloadeddata = () => {
 }
 
 const onPlay = () => {
-  if (videoRef.value && videoTimeline.value && videoTimeline.value.timelines.length > 0) {
-    isPlaying.value = true
+  if (videoRef.value && videoRef.value.currentTime <= 1 && videoTimeline.value && videoTimeline.value.timelines.length > 0) {
+    // if (videoRef.value.currentTime === videoRef.value.duration) {
+    //   return
+    // }
     const firstSegment = videoTimeline.value.timelines[0]
     videoRef.value.currentTime = firstSegment.start // 첫 구간 시작점으로 이동
     console.log(`Playing segment 0: ${firstSegment.start} to ${firstSegment.end}`)
   }
 }
 
-const onPause = () => {
-  isPlaying.value = false
+const moveTimeline = (index: number) => {
+  if (videoRef.value && videoTimeline.value && videoTimeline.value.timelines.length > 0) {
+    const segment = videoTimeline.value.timelines[index]
+    videoRef.value.currentTime = segment.start
+    currentSegmentIndex.value = index
+    console.log(`Moved to segment ${index}: ${segment.start} to ${segment.end}`)
+  }
 }
-
 </script>
 <template>
   <div class="detail-view">
-    <div v-if="selectedVideo && videoMetadatas.length > 0 && selectedVideoUrl && show" class="video-detail">
+    <div v-if="selectedVideo && selectedVideoUrl && show" class="video-detail">
       <div class="thumbnail-wrapper">
         <video 
           ref="videoRef" 
           :src="selectedVideoUrl" 
           class="detail-thumbnail"
           @timeupdate="onTimeUpdate"
-          @loadeddata="onloadeddata"
+          @loadeddata="onLoadedData"
           @play="onPlay"
-          @pause="onPause"
           @ended="onEnded"
-          controls 
+          controls
+          controlslist="nodownload noremoteplayback"
         />
       </div>
       <div class="detail-content">
@@ -161,20 +330,22 @@ const onPause = () => {
         </div>
         <div class="meta-info">
           <span class="meta-item">
-            <i class="icon-clock"></i> {{ formatDuration(selectedVideo.duration) }}
+            <i class="icon-clock"></i> {{ formatDuration(totalMusicDuration) }}
           </span>
           <span class="meta-item">
             <i class="icon-calendar"></i> {{ formatDate(selectedVideo.publishDate) }}
           </span>
-          <span class="meta-item">
-            <i class="icon-eye"></i> {{ selectedVideo.readCount }} views
-          </span>
         </div>
         <!-- 타임라인 목록 UI -->
         <div class="timeline-list" v-if="videoTimeline && videoTimeline.timelines.length > 0">
-          <h3>노래 타임라인</h3>
+          <div class="timeline-title">노래 타임라인 ({{ currentSegmentIndex + 1 }} / {{ videoTimeline.timelines.length }})</div>
           <ul>
-            <li v-for="(segment, index) in videoTimeline.timelines" :key="index" :class="{ active: index === currentSegmentIndex }">
+            <li 
+              v-for="(segment, index) in videoTimeline.timelines" 
+              :key="index" 
+              :class="{ active: index === currentSegmentIndex }"
+              @click="moveTimeline(index)"
+            >
               <span class="segment-time">{{ formatDuration(segment.start) }} - {{ formatDuration(segment.end) }}</span>
               <span class="segment-duration">({{ formatDuration(segment.end - segment.start) }})</span>
             </li>
@@ -318,11 +489,12 @@ h2 {
   margin-bottom: 16px;
 }
 
-.timeline-list h3 {
-  font-size: 16px;
+.timeline-list .timeline-title {
+  font-size: 14px;
   color: #333;
   margin: 0 0 8px;
-  font-weight: 500;
+  
+  /* font-weight: 500; */
 }
 
 .timeline-list ul {
@@ -334,6 +506,7 @@ h2 {
 .timeline-list li {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 8px 12px;
   font-size: 14px;
   color: #666;
@@ -341,6 +514,7 @@ h2 {
   border-radius: 6px;
   margin-bottom: 4px;
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 .timeline-list li.active {

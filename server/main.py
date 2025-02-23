@@ -17,8 +17,8 @@ app.include_router(chzzk.router)
 async def health_check():
     return {"status": "healthy"}
 
-app.mount(
-    "/", 
-    StaticFiles(directory=Path("../client/dist"), html=True), 
-    name="static",
-)
+# app.mount(
+#     "/", 
+#     StaticFiles(directory=Path("../client/dist"), html=True), 
+#     name="static",
+# )
