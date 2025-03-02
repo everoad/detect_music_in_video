@@ -1,0 +1,107 @@
+.timeline-controller {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  /* bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%); */
+  background: #333;
+  opacity: 0.2;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+.timeline-controller:hover {
+  opacity: 1;
+  transition: 50ms;
+}
+
+.timeline-controller .control-btn:first-child {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+.timeline-controller .control-btn:last-child {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.control-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 12px;
+  width: 28px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.control-btn:active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.autoplay-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+.auto-move-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+.auto-move-btn, .autoplay-btn {
+  transition: color 0.2s;
+}
+
+.timeline-indicator {
+  color: white;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 5px;
+}
+
+.progress-indicator {
+  color: white;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 5px;
+}
+
+.playable-indicator {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: rgba(20, 21, 23, 0.9);
+  color: rgb(0, 255, 163);
+  padding: 4px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  z-index: 9;
+}
+
+[class^="vod_recommend_thumbnail__"] .playable-indicator {
+  font-size: 12px;
+  bottom: 3px;
+  left: 3px;
+  padding: 4px;
+}
+
+
+div[class^="video_card_container__"] {
+  position: relative;
+}

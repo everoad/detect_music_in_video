@@ -8,10 +8,9 @@ import subprocess
 import scipy.signal as signal
 import noisereduce as nr
 import csv
+import os
 from scipy.ndimage import gaussian_filter1d
-import json
 import itertools
-import logging as log
 
 sample_rate = 16000
 
@@ -31,15 +30,42 @@ def classes_from_csv(class_map_csv_text):
     return class_names
 
 
+def file_exists(file_path):
+    """파일이 해당 경로에 존재하는지 확인"""
+    return os.path.exists(file_path) and os.path.isfile(file_path)
+
 def extract_audio(video_path, audio_path):
+    if file_exists(audio_path):
+        return
+    
     """ FFmpeg을 사용하여 동영상에서 오디오 추출 """
     ffmpeg_path = ffmpeg.get_ffmpeg_exe()
     command = [ffmpeg_path, "-i", video_path, "-acodec", "pcm_s16le", "-ar", f"{sample_rate}", "-ac", "1", audio_path, "-y"]
     subprocess.run(command, shell=True)
 
 
-def group_and_filter_music_times(music_times, min_term_duration, timestamps, music_prob_smoothed, singing_prob_smoothed, music_threshold, singing_threshold):
+def extract_audio_from_url(video_url: str, audio_output_path: str):
+    if file_exists(audio_output_path):
+        return
+    
+    ffmpeg_path = ffmpeg.get_ffmpeg_exe()
+    command = [
+        ffmpeg_path,
+        "-i", video_url,
+        "-vn",
+        "-acodec", "pcm_s16le",
+        "-ar", str(sample_rate),
+        "-ac", "1",
+        audio_output_path,
+        "-y"
+    ]
+    subprocess.run(command, shell=True, check=True)
+
+
+def group_and_filter_music_times(music_times, min_term_duration, timestamps, music_scores, singing_scores, music_threshold, singing_threshold):
     """ 음악 시간을 그룹화하고 필터링 """
+    exception_high_factor = 1.5
+    exception_row_factor = 0.5
     grouped_music_times = []
     current_group = []
     for time in music_times:
@@ -55,8 +81,6 @@ def group_and_filter_music_times(music_times, min_term_duration, timestamps, mus
 
     
     # 그룹별로 평균 확률 계산
-    exception_high_factor = 1.5
-    exception_row_factor = 0.5
     filtered_music_times = []
     for group in grouped_music_times:
         start_time, end_time = min(group), max(group)
@@ -66,14 +90,14 @@ def group_and_filter_music_times(music_times, min_term_duration, timestamps, mus
         avg_score = []
         if len(section_indices) > 0:
             avg_score = [
-                np.mean(music_prob_smoothed[section_indices]),  # 평균 Music 확률 계산
-                np.mean(singing_prob_smoothed[section_indices]) # 평균 Singing 확률 계산
+                np.mean(music_scores[section_indices]),  # 평균 Music 확률 계산
+                np.mean(singing_scores[section_indices]) # 평균 Singing 확률 계산
             ]
         else:
             avg_score = [0, 0]
 
-        print(f"구간 점수: {min_term_duration}, {start_time:.0f} ~ {end_time:.0f}, {(diff/len(group)):.3f}, {avg_score[0]:.3f}, {avg_score[1]:.3f}")
-        # 음악 및 노래 확률이 임계값 이상이고, 그룹의 평균 확률이 일정 범위 내에 있을 때만 유효한 음악 구간으로 간주
+        # print(f"구간 점수: {min_term_duration}, {start_time:.0f} ~ {end_time:.0f}, {(diff/len(group)):.3f}, {avg_score[0]:.3f}, {avg_score[1]:.3f}")
+        # 음악 및 노래 확률이 임계값 이상이거나, 그룹의 평균 확률이 일정 범위 내에 있을 때만 유효한 음악 구간으로 간주
         if (end_time - start_time) >= (min_term_duration * 0.5) and diff/len(group) > 0 and diff/len(group) <= 1 and (
                 (avg_score[0] >= music_threshold and avg_score[1] >= singing_threshold) or
                 (avg_score[0] >= music_threshold * exception_high_factor and avg_score[1] >= singing_threshold * exception_row_factor) or
@@ -82,18 +106,17 @@ def group_and_filter_music_times(music_times, min_term_duration, timestamps, mus
     
     return filtered_music_times
 
-def iterative_group_and_filter(music_times, timestamps, music_prob_smoothed, singing_prob_smoothed, music_threshold, singing_threshold):
+def iterative_group_and_filter(music_times, min_durations, timestamps, music_prob, singing_prob, music_threshold, singing_threshold):
     """
     min_durations 리스트에 있는 값을 순차적으로 적용하면서 음악 시간을 그룹화하고 필터링한다.
     """
-    min_durations = [5, 10, 15]
     grouped_music_times = music_times
     for index, min_duration in enumerate(min_durations):
         if (index == 0):
-            grouped_music_times = group_and_filter_music_times(grouped_music_times, min_duration, timestamps, music_prob_smoothed, singing_prob_smoothed, music_threshold, singing_threshold)
+            grouped_music_times = group_and_filter_music_times(grouped_music_times, min_duration, timestamps, music_prob, singing_prob, music_threshold, singing_threshold)
         else:
             flattened = list(itertools.chain.from_iterable(grouped_music_times))
-            grouped_music_times = group_and_filter_music_times(flattened, min_duration, timestamps, music_prob_smoothed, singing_prob_smoothed, music_threshold, singing_threshold)
+            grouped_music_times = group_and_filter_music_times(flattened, min_duration, timestamps, music_prob, singing_prob, music_threshold, singing_threshold)
 
     return grouped_music_times
 
@@ -113,33 +136,33 @@ def detect_music_sections(audio_path):
     y = reduce_noise_chunked(y, sample_rate, chunk_duration=10)
     y = apply_bandpass_filter(y, sample_rate)
     y = np.array(y, dtype=np.float32)
-
+    print(f"오디오 파일 크기: {len(y)}")
+    
     print("청크 단위로 모델 분석 시작...")
     chunk_duration = 9.6
-    chunk_samples = int(chunk_duration * sample_rate)
-    all_scores = []
+    chunk_samples = int(chunk_duration * sample_rate)     # 9.6초에 해당하는 샘플 수 (예: 153600)
+
+    all_scores_list = []
     for start in range(0, len(y), chunk_samples):
-        end = start + chunk_samples
+        # end = start + chunk_samples
+        end = min(start + chunk_samples, len(y))
         chunk = y[start:end]
-        # 마지막 청크가 10초보다 짧으면 0 패딩
-        if len(chunk) < chunk_samples:
-            chunk = np.pad(chunk, (0, chunk_samples - len(chunk)), mode='constant')
-
         chunk_scores, chunk_embeddings, chunk_spectrogram = model(chunk)
+        all_scores_list.append(chunk_scores.numpy())
 
-        all_scores.append(chunk_scores)
+    # 청크별 결과를 이어 붙여 전체 프레임 배열 생성
+    scores_np = np.concatenate(all_scores_list, axis=0)
     
-    # 청크별 결과 결합
-    scores_np = np.concatenate([s.numpy() for s in all_scores], axis=0)
-    print("모델 분석 완료.")
+    print(f"모델 분석 완료. {len(scores_np)}")
     
     # Musics, Singing 클래스의 확률만 추출
-    music_prob_smoothed = gaussian_filter1d(scores_np[:, music_class_index], sigma=3)
-    singing_prob_smoothed = gaussian_filter1d(scores_np[:, singing_class_index], sigma=3)
+    sigma = 3
+    music_scores = gaussian_filter1d(scores_np[:, music_class_index], sigma=sigma)
+    singing_scores = gaussian_filter1d(scores_np[:, singing_class_index], sigma=sigma)
 
     # 동적 임계값
-    music_threshold = np.mean(music_prob_smoothed)
-    singing_threshold = np.mean(singing_prob_smoothed)
+    music_threshold = np.mean(music_scores)
+    singing_threshold = np.mean(singing_scores)
     print(f"Music 동적 임계값: {music_threshold}")
     print(f"Singing 동적 임계값: {singing_threshold}")
     
@@ -153,34 +176,35 @@ def detect_music_sections(audio_path):
     timestamps = np.arange(len(top_class_indices)) * frame_duration
 
     # music 또는 singing이 최고 확률인 프레임 인덱스를 선택
-    music_or_singing_indices = np.where(
+    music_indices = np.where(
         (top_class_indices == music_class_index) | (top_class_indices == singing_class_index)
     )[0]
-    music_or_singing_times = timestamps[music_or_singing_indices]
+    music_times = timestamps[music_indices]
 
 
     # plot_music_probability(music_prob_smoothed, frame_duration, dynamic_threshold)
 
     # min_duration 이상인 구간 제거
-    diff = np.diff(music_or_singing_times)
+    diff = np.diff(music_times)
     mask = diff < (frame_duration * 5)
     # 첫 번째 값은 조건 비교에서 제외되므로, mask를 prepend False하여 동일한 결과를 얻음
-    filtered_music_or_singing_times = music_or_singing_times[np.concatenate(([False], mask))]
+    filtered_music_times = music_times[np.concatenate(([False], mask))]
 
     # 인접한 값들을 그룹화하여 2차원 배열로 변환
-    grouped_music_or_singing_times = iterative_group_and_filter(filtered_music_or_singing_times, timestamps, music_prob_smoothed, singing_prob_smoothed, music_threshold, singing_threshold)
+    min_durations = [frame_duration * 15, frame_duration * 20, frame_duration * 25, frame_duration * 30]
+    grouped_music_times = iterative_group_and_filter(filtered_music_times, min_durations, timestamps, music_scores, singing_scores, music_threshold, singing_threshold)
 
-    # 최소 그룹 길이 필터링
-    min_group_duration = 60
-    final_grouped_times = [
-        group for group in grouped_music_or_singing_times
-        if (max(group) - min(group)) > min_group_duration
+    # 최소 노래 길이 필터링
+    min_music_duration = 60
+    final_music_sections = [
+        group for group in grouped_music_times
+        if (max(group) - min(group)) > min_music_duration
     ]
-    return final_grouped_times
+    return final_music_sections
 
 def find_music_segments(video_file):
     """ 동영상에서 음악 구간을 탐지하고 반환 """
-    audio_path = "C:/Users/beomjk/Downloads/temp_audio4.wav"
+    audio_path = "C:/Users/kbj/Downloads/20250106.wav"
     extract_audio(video_file, audio_path)
     return detect_music_sections(audio_path)
 
@@ -242,22 +266,3 @@ def plot_music_probability(music_prob, frame_duration, threshold):
     plt.grid(True)
     plt.show()
 
-
-# 실행 예제
-video_file = "C:/Users/beomjk/Downloads/videoplayback2.mp4"
-segments = find_music_segments(video_file)
-
-ranges = []
-for index, segment in enumerate(segments):
-    start_time, end_time = min(segment), max(segment)
-    ranges.append({
-        "start": start_time,  # 구간의 최소값
-        "end": end_time     # 구간의 최대값
-    })
-    print(f"노래 {index + 1}: {start_time:.0f} ~ {end_time:.0f}")  # 원래 출력 유지
-
-# JSON 파일로 저장
-with open('ranges2.json', 'w', encoding='utf-8') as f:
-    json.dump(ranges, f, indent=2)
-
-print("JSON file 'ranges.json' created successfully.")

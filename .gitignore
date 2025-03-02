@@ -39,3 +39,6 @@ dist/
 .vscode/
 .idea/
 *.swp
+
+*.wav
+*.mp4

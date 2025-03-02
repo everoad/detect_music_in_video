@@ -21,10 +21,10 @@ const loadVideos = async (pageNum: number) => {
     const response: ChzzkContent<ChzzkVideo> = await fetchChzzkChannelVideos({ page: pageNum })
     const newVideos = response.data.filter((video) => video.videoCategory === 'music')
 
+    videos.value = [...videos.value, ...newVideos]
     if (newVideos.length === 0 || pageNum >= response.totalPages - 1) {
       hasMore.value = false
     } else {
-      videos.value = [...videos.value, ...newVideos]
       if (!selectedVideo.value && newVideos.length > 0 && page.value === 0) {
         await setSelectedVideo(newVideos[0]) // 첫 번째 비디오 기본 선택
       }
@@ -102,7 +102,7 @@ provide(ChzzkVideoKey, {
 <style scoped>
 .container {
   display: flex;
-  height: 100vh;
+  /* height: 100vh; */
   overflow: hidden;
 }
 

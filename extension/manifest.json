@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "티뭉의 치지직 노래 다시듣기",
+  "version": "1.0.0",
+  "description": "티뭉 치지직 채널 다시보기에서 노래 구간 검색 및 재생하는 플레이어",
+  "permissions": [
+    "tabs",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://chzzk.naver.com/*"
+  ],
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chzzk.naver.com/*"
+      ],
+      "js": [
+        "js/content.js"
+      ],
+      "css": [
+        "assets/styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/*"
+      ],
+      "matches": [
+        "https://chzzk.naver.com/*"
+      ],
+      "use_dynamic_url": true
+    }
+  ]
+}
