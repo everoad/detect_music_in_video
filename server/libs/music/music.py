@@ -53,6 +53,7 @@ def extract_audio_from_url(video_url: str, audio_output_path: str):
         ffmpeg_path = ffmpeg.get_ffmpeg_exe()
         command = [
             ffmpeg_path,
+            "-hwaccel", "none",
             "-i", video_url,
             "-vn",
             "-acodec", "pcm_s16le",
