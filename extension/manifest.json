@@ -38,5 +38,10 @@
       ],
       "use_dynamic_url": true
     }
-  ]
+  ],
+  "icons": {
+    "16": "assets/app.jpg",
+    "48": "assets/app.jpg",
+    "128": "assets/app.jpg"
+  }
 }

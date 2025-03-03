@@ -33,7 +33,7 @@
     MAX_RETRY_COUNT: 10,
     TIMELINE_API_URL: '/api/chzzk/videos/timeline',
     LOCAL_BASE_URL: 'http://127.0.0.1:8000',
-    LIVE_BASE_URL: 'http://127.0.0.1:8000'
+    LIVE_BASE_URL: 'https://172-237-27-244.ip.linodeusercontent.com'
   })
 
   const TEXT = Object.freeze({
@@ -217,6 +217,10 @@
         if (!await this.isTimoong()) return
         this.timelines = await this.fetchVideoTimelines(this.videoNo)
         if (this.timelines.length < 1) return
+        this.timelines = this.timelines.map((timeline) => ({
+          start: timeline.start - 2,
+          end: timeline.end + 2
+        }))
         this.createController()
       } catch (error) {
         console.error('Failed to fetch timeline data:', error)
