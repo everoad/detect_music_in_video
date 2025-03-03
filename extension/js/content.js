@@ -1,6 +1,6 @@
 
 (function () {
-  
+
   const ICONS = Object.freeze({
     PLAY: 'play',
     STOP: 'stop',
@@ -18,7 +18,7 @@
     VIDEOS: 'videos',
     LAST_CALL_API_TIME: 'lastCallApiTime'
   })
-  
+
 
   const API_KEY = 'S2tZV0dXY2U4MDdaUXlBbHU4UVE='
   const TIMOONG_CHANNEL_ID = '26253bf7ed6b95832c40f4f43f6d049d'
@@ -53,6 +53,17 @@
     return (...args) => {
       if (timeoutId) clearTimeout(timeoutId)
       timeoutId = setTimeout(() => callback(...args), time)
+    }
+  }
+
+  function throttle(callback, time) {
+    let lastTime = 0
+    return (...args) => {
+      const now = Date.now()
+      if (now - lastTime >= time) {
+        lastTime = now
+        return callback(...args)
+      }
     }
   }
 
@@ -119,12 +130,14 @@
     // chrome.storage 어댑터
     chromeStorageAdapter() {
       return {
-        set: (data) => {
+        set: async (data) => {
+          await wakeup()
           return new Promise((resolve) => {
             chrome.storage.local.set(data, resolve)
           })
         },
-        get: (keys) => {
+        get: async (keys) => {
+          await wakeup()
           return new Promise((resolve) => {
             chrome.storage.local.get(keys, resolve)
           })
@@ -146,7 +159,7 @@
       try {
         const result = await this.storage.get([key])
         return result[key] !== undefined ? result[key] : defaultValue
-      } catch(e) {
+      } catch (e) {
         console.warn(e)
         return defaultValue
       }
@@ -154,11 +167,14 @@
 
     async fetchTimelines() {
       try {
-        const response = await fetch(`${this.baseUrl}${APP_CONSTANTS.TIMELINE_API_URL}`, { headers: {Authorization: `Bearer ${API_KEY}`} })
+        const response = await fetch(`${this.baseUrl}${APP_CONSTANTS.TIMELINE_API_URL}`, { headers: { Authorization: `Bearer ${API_KEY}` } })
         if (!response.ok) {
           throw new Error(`Failed to fetch timelines: ${response.status}`)
         }
-        return await response.json()
+        const videos = await response.json()
+        await this.saveStorageData(STOREAGE_KEYS.VIDEOS, videos)
+        await this.saveStorageData(STOREAGE_KEYS.LAST_CALL_API_TIME, Date.now())
+        return videos
       } catch (error) {
         console.warn('Failed to fetch timelines:', error)
         return this.videos
@@ -181,10 +197,6 @@
 
       if (!this.videos.length < 1 || !this.videos.find((item) => item.videoNo === this.videoNo) || currentTime - callApiTime >= oneHourInMs) {
         this.videos = await this.fetchTimelines()
-        await Promise.all([
-          this.saveStorageData(STOREAGE_KEYS.VIDEOS, this.videos),
-          this.saveStorageData(STOREAGE_KEYS.LAST_CALL_API_TIME, currentTime)
-        ])
       }
       const findVideo = this.videos.find((video) => video.videoNo === this.videoNo)
       return findVideo ? findVideo.timelines : []
@@ -240,7 +252,7 @@
       } else {
         await this.loadTimelineData()
         if (this.controller) {
-          await Promise.all([ this.loadAutoPlaySetting(), this.loadAutoMoveSetting() ])
+          await Promise.all([this.loadAutoPlaySetting(), this.loadAutoMoveSetting()])
           if (this.isAutoPlayVideo) {
             this.videoElement.addEventListener('canplay', this.canPlay)
           }
@@ -396,14 +408,14 @@
       this.updateProgressIndicator()
     }
 
-    
+
     toggleAutoPlay = async () => {
       this.isAutoPlayVideo = !this.isAutoPlayVideo
       await this.saveStorageData(STOREAGE_KEYS.AUTOPLAY, this.isAutoPlayVideo)
       this.updateAutoPlayButtonStyle()
     }
 
-    
+
     updateAutoPlayButtonStyle() {
       if (this.autoPlayButtonImg) {
         this.autoPlayButtonImg.src = this.isAutoPlayVideo ? this.getIcon(ICONS.AUTOPLAY_ACTIVE) : this.getIcon(ICONS.AUTOPLAY)
@@ -492,6 +504,7 @@
     }
 
     play = async () => {
+      await wakeup()
       const currentTime = this.videoElement.currentTime
       const currentTimeline = this.timelines[this.currentIndex]
       if (!currentTimeline) return
@@ -507,7 +520,7 @@
           this.playButtonImg.src = this.getIcon(ICONS.STOP)
         }
         this.isPlaying = true
-      } catch(e) {
+      } catch (e) {
       }
     }
 
@@ -562,7 +575,7 @@
       let page = 0
       let videos = []
       let totalPages = 1 // 초기값 설정
-    
+
       while (page < totalPages) {
         const response = await fetch(`${CHZZK_CONSTANTS.CHZZK_VIDEO_LIST_API_URL}&page=${page}`)
         const data = await response.json()
@@ -570,11 +583,12 @@
         totalPages = data.content.totalPages // 마지막 페이지 정보 업데이트
         page++
       }
-    
+
       return videos
     }
 
     async moveToNextVideo() {
+      await wakeup()
       const totalVideos = await this.fetchChannelVideos()
 
       let currentIndex = this.videos.findIndex(video => video.videoNo === this.videoNo)
@@ -583,7 +597,7 @@
       for (let i = 1; i <= this.videos.length; i++) {
         const nextIndex = (currentIndex + i) % this.videos.length
         const candidateVideo = this.videos[nextIndex]
-    
+
         if (totalVideos.some(video => video.videoNo === candidateVideo.videoNo)) {
           nextVideo = candidateVideo
           break
@@ -642,7 +656,7 @@
         const href = item.getAttribute('href')
         const videoNoMatch = href.match(/\/video\/(\d+)/)
         if (!videoNoMatch) return
-  
+
         const videoNo = Number(videoNoMatch[1])
         const isPlayable = this.videos.some((video) => video.videoNo === videoNo)
         if (isPlayable) {
@@ -734,8 +748,8 @@
     }
 
     isValidVideoUrl() {
-       const pattern = /^https:\/\/chzzk\.naver\.com\/video\/.*/
-       return this.isDev || pattern.test(location.href)
+      const pattern = /^https:\/\/chzzk\.naver\.com\/video\/.*/
+      return this.isDev || pattern.test(location.href)
     }
 
     isValidChannelVideosUrl() {
@@ -766,19 +780,25 @@
     }
   }
 
-  async function start() {
-    chrome.runtime.sendMessage({ action: "wakeup" }, async (response) => {
-      console.log("✅ Receive message:", response)
-      if (response.status === 'ok') {
-        const controller = new VideoTimelineController()
-        await controller.loadVideoData()
-        if (controller.isDev || controller.isValidVideoUrl()) {
-          controller.init()
-        }
-        controller.initObserver()
-      }
-    })
+  const wakeup = throttle(() => {
+    if (!chrome.runtime) return
 
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: "wakeup" }, async (response) => {
+        console.debug("✅ Receive message:", response)
+        resolve(response.status === 'ok')
+      })
+    })
+  }, 10000)
+
+  async function start() {
+    await wakeup()
+    const controller = new VideoTimelineController()
+    await controller.loadVideoData()
+    if (controller.isDev || controller.isValidVideoUrl()) {
+      controller.init()
+    }
+    controller.initObserver()
   }
 
   // 페이지 로드 시 실행
@@ -788,4 +808,4 @@
     start()
   }
 
-}) ()
+})()

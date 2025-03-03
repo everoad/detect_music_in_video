@@ -5,7 +5,7 @@ const CONSTANTS = Object.freeze({
 })
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("📩 Receive message :", message)
+  console.debug("📩 Receive message :", message)
   if (message.action === "wakeup") {
     initKeepaliveAlarm()
     sendResponse({ status: "ok" })
@@ -14,13 +14,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 })
 
 function initKeepaliveAlarm() {
-  console.log(`✅ Init keepalive alarm : ${CONSTANTS.TARGET_URL}`)
+  console.debug(`✅ Init keepalive alarm : ${CONSTANTS.TARGET_URL}`)
   chrome.alarms.get(CONSTANTS.KEEPALIVE, (alarm) => {
     if (alarm) {
       chrome.alarms.clear(CONSTANTS.KEEPALIVE)
       chrome.alarms.onAlarm.removeListener(onAlarm)
     }
-    console.log("✅ Create Keepalive alarm.")
     chrome.alarms.create(CONSTANTS.KEEPALIVE, { periodInMinutes: 0.5 })
     chrome.alarms.onAlarm.addListener(onAlarm)
   })
@@ -28,7 +27,7 @@ function initKeepaliveAlarm() {
 
 function onAlarm(alarm) {
   if (alarm.name === CONSTANTS.KEEPALIVE) {
-    console.log("✅ Alarm triggered. Keeping service worker alive.")
+    console.debug("✅ Alarm triggered. Keeping service worker alive.")
     checkIfChzzkIsStillOpen()
   }
 }
@@ -38,11 +37,11 @@ function checkIfChzzkIsStillOpen() {
   chrome.tabs.query({}, (tabs) => {
     const isChzzkOpen = tabs.some(tab => tab.url && tab.url.startsWith(CONSTANTS.TARGET_URL))
     if (!isChzzkOpen) {
-      console.log("❌ No Chzzk tabs open. Stopping service worker.")
+      console.debug("❌ No Chzzk tabs open. Stopping service worker.")
       chrome.alarms.clear(CONSTANTS.KEEPALIVE)
       chrome.alarms.onAlarm.removeListener(onAlarm)
     } else {
-      console.log("✅ Chzzk is still open in at least one tab.")
+      console.debug("✅ Chzzk is still open in at least one tab.")
     }
   })
 }
