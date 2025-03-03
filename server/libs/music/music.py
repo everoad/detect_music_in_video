@@ -11,6 +11,7 @@ import csv
 import os
 from scipy.ndimage import gaussian_filter1d
 import itertools
+from logs.log_config import logger
 
 sample_rate = 16000
 
@@ -45,21 +46,24 @@ def extract_audio(video_path, audio_path):
 
 
 def extract_audio_from_url(video_url: str, audio_output_path: str):
-    if file_exists(audio_output_path):
-        return
-    
-    ffmpeg_path = ffmpeg.get_ffmpeg_exe()
-    command = [
-        ffmpeg_path,
-        "-i", video_url,
-        "-vn",
-        "-acodec", "pcm_s16le",
-        "-ar", str(sample_rate),
-        "-ac", "1",
-        audio_output_path,
-        "-y"
-    ]
-    subprocess.run(command, shell=True, check=True)
+    try:
+        if file_exists(audio_output_path):
+            return
+        
+        ffmpeg_path = ffmpeg.get_ffmpeg_exe()
+        command = [
+            ffmpeg_path,
+            "-i", video_url,
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-ar", str(sample_rate),
+            "-ac", "1",
+            audio_output_path,
+            "-y"
+        ]
+        subprocess.run(command, shell=True, check=True)
+    except Exception as e:
+        logger.info(f"❌ Error extract audio: {e}")
 
 
 def group_and_filter_music_times(music_times, min_term_duration, timestamps, music_scores, singing_scores, music_threshold, singing_threshold):
@@ -96,7 +100,7 @@ def group_and_filter_music_times(music_times, min_term_duration, timestamps, mus
         else:
             avg_score = [0, 0]
 
-        # print(f"구간 점수: {min_term_duration}, {start_time:.0f} ~ {end_time:.0f}, {(diff/len(group)):.3f}, {avg_score[0]:.3f}, {avg_score[1]:.3f}")
+        # logger.info(f"구간 점수: {min_term_duration}, {start_time:.0f} ~ {end_time:.0f}, {(diff/len(group)):.3f}, {avg_score[0]:.3f}, {avg_score[1]:.3f}")
         # 음악 및 노래 확률이 임계값 이상이거나, 그룹의 평균 확률이 일정 범위 내에 있을 때만 유효한 음악 구간으로 간주
         if (end_time - start_time) >= (min_term_duration * 0.5) and diff/len(group) > 0 and diff/len(group) <= 1 and (
                 (avg_score[0] >= music_threshold and avg_score[1] >= singing_threshold) or
@@ -128,17 +132,17 @@ def detect_music_sections(audio_path):
     class_map_path = model.class_map_path().numpy()
     classes = classes_from_csv(class_map_path)
     music_class_index = [index for name, index in classes if "Music" in name][0]
-    print(f"Music 클래스: {music_class_index}")
+    logger.info(f"Music 클래스: {music_class_index}")
     singing_class_index = [index for name, index in classes if "Singing" in name][0]
-    print(f"Singing 클래스: {singing_class_index}")
+    logger.info(f"Singing 클래스: {singing_class_index}")
 
     y, sr = librosa.load(audio_path, sr=sample_rate)
     y = reduce_noise_chunked(y, sample_rate, chunk_duration=10)
     y = apply_bandpass_filter(y, sample_rate)
     y = np.array(y, dtype=np.float32)
-    print(f"오디오 파일 크기: {len(y)}")
+    logger.info(f"오디오 파일 크기: {len(y)}")
     
-    print("청크 단위로 모델 분석 시작...")
+    logger.info("청크 단위로 모델 분석 시작...")
     chunk_duration = 9.6
     chunk_samples = int(chunk_duration * sample_rate)     # 9.6초에 해당하는 샘플 수 (예: 153600)
 
@@ -153,7 +157,7 @@ def detect_music_sections(audio_path):
     # 청크별 결과를 이어 붙여 전체 프레임 배열 생성
     scores_np = np.concatenate(all_scores_list, axis=0)
     
-    print(f"모델 분석 완료. {len(scores_np)}")
+    logger.info(f"모델 분석 완료. {len(scores_np)}")
     
     # Musics, Singing 클래스의 확률만 추출
     sigma = 3
@@ -163,16 +167,16 @@ def detect_music_sections(audio_path):
     # 동적 임계값
     music_threshold = np.mean(music_scores)
     singing_threshold = np.mean(singing_scores)
-    print(f"Music 동적 임계값: {music_threshold}")
-    print(f"Singing 동적 임계값: {singing_threshold}")
+    logger.info(f"Music 동적 임계값: {music_threshold}")
+    logger.info(f"Singing 동적 임계값: {singing_threshold}")
     
     # 프레임별 가장 높은 확률의 클래스 인덱스 찾기 (Top-1)
     top_class_indices = np.argmax(scores_np, axis=1)
 
     duration = len(y)/sample_rate
-    print(f"오디오 길이: {duration:.0f} 초")
+    logger.info(f"오디오 길이: {duration:.0f} 초")
     frame_duration = duration / len(top_class_indices)
-    print(f"프레임 길이: {frame_duration:.3f} 초")
+    logger.info(f"프레임 길이: {frame_duration:.3f} 초")
     timestamps = np.arange(len(top_class_indices)) * frame_duration
 
     # music 또는 singing이 최고 확률인 프레임 인덱스를 선택
@@ -211,7 +215,7 @@ def find_music_segments(video_file):
 
 def reduce_noise_chunked(y, sr, chunk_duration=10):
     """ 청크 단위로 오디오 노이즈 제거 수행 (기본 청크 길이: 10초) """
-    print("노이즈 제거 시작 (청크 단위)...")
+    logger.info("노이즈 제거 시작 (청크 단위)...")
     chunk_size = int(chunk_duration * sr)  # 청크당 샘플 수 계산
     auto_prop_decrease = detect_auto_prop_decrease(y)
     reduced_audio = np.empty_like(y)
@@ -221,14 +225,14 @@ def reduce_noise_chunked(y, sr, chunk_duration=10):
         chunk = y[start:end]
         reduced_chunk = nr.reduce_noise(y=chunk, sr=sr, prop_decrease=auto_prop_decrease, stationary=True)
         reduced_audio[start:end] = reduced_chunk
-    print("노이즈 제거 완료.")
+    logger.info("노이즈 제거 완료.")
     return reduced_audio
 
 
 def detect_auto_prop_decrease(y):
     """ 노이즈 레벨(SNR)에 따라 prop_decrease 값 자동 조정 """
     noise_level = np.mean(np.abs(y))  # 오디오 신호의 평균 진폭 계산
-    print(f"노이즈 레벨: {noise_level}")
+    logger.info(f"노이즈 레벨: {noise_level}")
     if noise_level < 0.01:  # 매우 조용한 오디오
         return 0.2
     elif noise_level < 0.05:  # 중간 정도 소음
@@ -239,7 +243,7 @@ def detect_auto_prop_decrease(y):
 
 def apply_bandpass_filter(y, sr, lowcut=200, highcut=8000, order=5):
     """ 저주파(200Hz 이하) & 고주파(8kHz 이상) 제거 """
-    print("밴드패스 필터 시작...")
+    logger.info("밴드패스 필터 시작...")
     nyquist = 0.5 * sr
     if highcut >= nyquist:
         highcut = nyquist - 1
@@ -247,7 +251,7 @@ def apply_bandpass_filter(y, sr, lowcut=200, highcut=8000, order=5):
     high = highcut / nyquist
     b, a = signal.butter(order, [low, high], btype='band')
     result = signal.lfilter(b, a, y)
-    print("밴드패스 필터 완료.")
+    logger.info("밴드패스 필터 완료.")
     return result
 
 
