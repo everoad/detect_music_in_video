@@ -11,7 +11,7 @@ import csv
 import os
 from scipy.ndimage import gaussian_filter1d
 import itertools
-from logs.log_config import logger
+from log.log_config import logger
 
 sample_rate = 16000
 

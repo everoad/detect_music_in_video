@@ -3,6 +3,7 @@ from httpx import AsyncClient, RequestError
 from models.video_model import VideoAnalyzeRequest, VideoAnalyzeResponse, TaskResponse
 from services.chzzk_service import analyze_video, find_video_timelines
 from typing import List
+from log.log_config import logger
 
 VALID_API_KEY = 'asdf'
 
@@ -16,7 +17,7 @@ router = APIRouter(
 async def get_video_timelines(authorization: str = Header(...)):
     if authorization != f"Bearer {VALID_API_KEY}":
         raise HTTPException(status_code=401, detail="Invalid API key")
-    
+    logger.info("GET /videos/timeline")
     return find_video_timelines()
 
 
@@ -24,6 +25,8 @@ async def get_video_timelines(authorization: str = Header(...)):
 async def analyze_video_endpoint(video_data: VideoAnalyzeRequest, background_tasks: BackgroundTasks, authorization: str = Header(...)):
     if authorization != f"Bearer {VALID_API_KEY}":
         raise HTTPException(status_code=401, detail="Invalid API key")
+    
+    logger.info("GET /videos/analyze")
     
     background_tasks.add_task(analyze_video, video_data.video_url, video_data.video_no, video_data.channel_id)
     
