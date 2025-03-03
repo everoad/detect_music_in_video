@@ -5,7 +5,7 @@ from services.chzzk_service import analyze_video, find_video_timelines
 from typing import List
 from log.log_config import logger
 
-VALID_API_KEY = 'asdf'
+VALID_API_KEY = 'S2tZV0dXY2U4MDdaUXlBbHU4UVE='
 
 router = APIRouter(
     prefix="/chzzk",

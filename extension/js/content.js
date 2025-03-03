@@ -20,7 +20,7 @@
   })
   
 
-  const API_KEY = 'asdf'
+  const API_KEY = 'S2tZV0dXY2U4MDdaUXlBbHU4UVE='
   const TIMOONG_CHANNEL_ID = '26253bf7ed6b95832c40f4f43f6d049d'
 
   const CHZZK_CONSTANTS = Object.freeze({
