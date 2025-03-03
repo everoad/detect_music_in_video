@@ -16,13 +16,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function initKeepaliveAlarm() {
   console.log(`✅ Init keepalive alarm : ${CONSTANTS.TARGET_URL}`)
   chrome.alarms.get(CONSTANTS.KEEPALIVE, (alarm) => {
-    if (!alarm) {
-      console.log("✅ Create Keepalive alarm.")
-      chrome.alarms.create(CONSTANTS.KEEPALIVE, { periodInMinutes: 0.5 })
-      chrome.alarms.onAlarm.addListener(onAlarm)
-    } else {
-      console.log("🚀 Alarm already exists, skipping creation.")
+    if (alarm) {
+      chrome.alarms.clear(CONSTANTS.KEEPALIVE)
+      chrome.alarms.onAlarm.removeListener(onAlarm)
     }
+    console.log("✅ Create Keepalive alarm.")
+    chrome.alarms.create(CONSTANTS.KEEPALIVE, { periodInMinutes: 0.5 })
+    chrome.alarms.onAlarm.addListener(onAlarm)
   })
 }
 
