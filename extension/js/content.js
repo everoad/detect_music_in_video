@@ -168,7 +168,7 @@
           throw new Error(`Failed to fetch timelines: ${response.status}`)
         }
         let videos = await response.json()
-        // videos = videos.filter((video) => video.deploy === 1)
+        videos = videos.filter((video) => video.deploy === 1)
         this.saveStorageData(STOREAGE_KEYS.VIDEOS, videos)
         this.saveStorageData(STOREAGE_KEYS.LAST_CALL_API_TIME, Date.now())
         return videos
