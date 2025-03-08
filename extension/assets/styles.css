@@ -2,6 +2,7 @@
   position: absolute;
   top: 5px;
   left: 5px;
+  width: 281px;
   /* bottom: 10px;
   left: 50%;
   transform: translateX(-50%); */
@@ -9,11 +10,12 @@
   opacity: 0.2;
   border-radius: 5px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 2px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   z-index: 1000;
 }
+
 .timeline-controller:hover {
   opacity: 1;
   transition: 50ms;
@@ -70,6 +72,8 @@
   font-size: 14px;
   font-weight: 500;
   padding: 0 5px;
+  width: 53px;
+  text-align: center;
 }
 
 .progress-indicator {
@@ -104,4 +108,87 @@
 
 div[class^="video_card_container__"] {
   position: relative;
+}
+/* 개선된 타임라인 드롭다운 스타일 */
+.timeline-dropdown {
+  position: absolute;
+  top: calc(100%); /* 컨트롤러와 약간 띄우기 */
+  left: 0;
+  background: #333; /* 조금 더 밝은 배경 */
+  opacity: 0.8;
+  color: #fff;
+  width: 281px; /* 살짝 넓게 */
+  max-height: 254px; /* 더 많은 항목 보이도록 */
+  overflow-y: auto; /* 스크롤 가능 */
+  border-radius: 5px; /* 부드러운 모서리 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* 입체감 있는 그림자 */
+  z-index: 10;
+  padding: 0px 0; /* 내부 여백 추가 */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* 미세한 테두리 */
+}
+
+/* 스크롤바 커스터마이징 */
+.timeline-dropdown::-webkit-scrollbar {
+  width: 8px; /* 스크롤바 너비 */
+}
+
+.timeline-dropdown::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3); /* 트랙 배경 */
+  border-radius: 8px;
+}
+
+.timeline-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4); /* 스크롤바 색상 */
+  border-radius: 8px;
+  border: 2px solid rgba(30, 30, 30, 0.95); /* 배경과 조화 */
+}
+
+.timeline-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6); /* 호버 시 밝아짐 */
+}
+
+/* 개선된 타임라인 항목 스타일 */
+.timeline-item {
+  padding: 8px 8px; /* 여백 증가 */
+  cursor: pointer;
+  font-family: 'Arial', sans-serif;
+  font-size: 13px;
+  color: #ddd; /* 살짝 부드러운 색상 */
+  transition: background 0.2s ease, color 0.2s ease; /* 부드러운 전환 */
+  display: flex;
+  justify-content: space-between;
+}
+
+.timeline-item>div:first-child {
+  width: 20px;
+  text-align: right;
+}
+.timeline-item>div:nth-child(2n) {
+  padding: 0 10px;
+  white-space: nowrap;       /* 줄 바꿈 방지 */
+  overflow: hidden;          /* 넘치는 글자 숨김 */
+  text-overflow: ellipsis;   /* 말줄임표(...) 표시 */
+  width: 210px;
+  text-align: center;
+}
+
+.timeline-item>div:last-child {
+  width: 26px;
+  text-align: right;
+}
+
+.timeline-item:hover {
+  background: rgba(255, 255, 255, 0.15); /* 호버 시 더 부드럽게 */
+  color: #fff; /* 텍스트 밝게 */
+}
+
+.timeline-item.active {
+  background: rgba(0, 255, 163, 0.3); /* 현재 항목 강조 (플레이어 색상과 조화) */
+  color: #fff;
+  font-weight: 600; /* 약간 굵게 */
+}
+
+/* 선택된 항목 호버 시 */
+.timeline-item.active:hover {
+  background: rgba(0, 255, 163, 0.4);
 }

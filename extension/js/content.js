@@ -19,8 +19,6 @@
     LAST_CALL_API_TIME: 'lastCallApiTime'
   })
 
-
-  const API_KEY = 'S2tZV0dXY2U4MDdaUXlBbHU4UVE='
   const TIMOONG_CHANNEL_ID = '26253bf7ed6b95832c40f4f43f6d049d'
 
   const CHZZK_CONSTANTS = Object.freeze({
@@ -31,9 +29,7 @@
 
   const APP_CONSTANTS = Object.freeze({
     MAX_RETRY_COUNT: 10,
-    TIMELINE_API_URL: '/api/chzzk/videos/timeline',
-    LOCAL_BASE_URL: 'http://127.0.0.1:8000',
-    LIVE_BASE_URL: 'https://172-237-27-244.ip.linodeusercontent.com'
+    LOCAL_BASE_URL: 'http://127.0.0.1:8000'
   })
 
   const TEXT = Object.freeze({
@@ -68,7 +64,7 @@
   }
 
   class VideoTimelineController {
-    constructor() {
+    constructor({ API_KEY, BASE_URL, TIMELINE_API_URL }) {
       this.videoElement = null
       this.controller = null
       this.timelines = []
@@ -82,11 +78,11 @@
       this.videos = []
       this.isAutoMoveVideo = false
       this.isAutoPlayVideo = false
-      this.baseUrl = this.isDev ? APP_CONSTANTS.LOCAL_BASE_URL : APP_CONSTANTS.LIVE_BASE_URL
+      this.baseUrl = this.isDev ? APP_CONSTANTS.LOCAL_BASE_URL : BASE_URL
       this.isAdPlaying = false
-      this.adCheckInterval = null
       this.observer = null
-      this.port = null
+      this.apiKey = API_KEY
+      this.timeLineApiUrl = TIMELINE_API_URL
     }
 
     // URL에서 videoNo 추출
@@ -158,22 +154,23 @@
     async loadStorageData(key, defaultValue = null) {
       try {
         const result = await this.storage.get([key])
-        return result[key] !== undefined ? result[key] : defaultValue
+        return result[key] !== undefined && result[key] !== null ? result[key] : defaultValue
       } catch (e) {
         console.warn(e)
         return defaultValue
       }
     }
 
-    async fetchTimelines() {
+    async fetchVideos() {
       try {
-        const response = await fetch(`${this.baseUrl}${APP_CONSTANTS.TIMELINE_API_URL}`, { headers: { Authorization: `Bearer ${API_KEY}` } })
+        const response = await fetch(`${this.baseUrl}${this.timeLineApiUrl}`, { headers: { Authorization: `Bearer ${this.apiKey}` } })
         if (!response.ok) {
           throw new Error(`Failed to fetch timelines: ${response.status}`)
         }
-        const videos = await response.json()
-        await this.saveStorageData(STOREAGE_KEYS.VIDEOS, videos)
-        await this.saveStorageData(STOREAGE_KEYS.LAST_CALL_API_TIME, Date.now())
+        let videos = await response.json()
+        // videos = videos.filter((video) => video.deploy === 1)
+        this.saveStorageData(STOREAGE_KEYS.VIDEOS, videos)
+        this.saveStorageData(STOREAGE_KEYS.LAST_CALL_API_TIME, Date.now())
         return videos
       } catch (error) {
         console.warn('Failed to fetch timelines:', error)
@@ -181,25 +178,29 @@
       }
     }
 
-    async loadVideoData() {
+    async setVideoData() {
       this.videos = await this.loadStorageData(STOREAGE_KEYS.VIDEOS, this.videos)
-      if (this.videos.length < 1) {
-        this.videos = await this.fetchTimelines()
-      }
-    }
-
-    async fetchVideoTimelines() {
-      await this.loadVideoData()
 
       const callApiTime = await this.loadStorageData(STOREAGE_KEYS.LAST_CALL_API_TIME, 0)
       const currentTime = Date.now()
       const oneHourInMs = 60 * 60 * 1000
 
-      if (!this.videos.length < 1 || !this.videos.find((item) => item.videoNo === this.videoNo) || currentTime - callApiTime >= oneHourInMs) {
-        this.videos = await this.fetchTimelines()
+      if (this.videos.length <  1 || currentTime - callApiTime >= oneHourInMs) {
+        this.videos = await this.fetchVideos()
       }
+    }
+
+    async setTimelines() {
+      await this.setVideoData()
+      
       const findVideo = this.videos.find((video) => video.videoNo === this.videoNo)
-      return findVideo ? findVideo.timelines : []
+      const timelines = findVideo ? findVideo.timelines : []
+
+      this.timelines = timelines.map((timeline) => ({
+        start: Math.max(timeline.start - 2, 0),
+        end: timeline.end + 2,
+        title: timeline.title || '-'
+      }))
     }
 
     async isTimoong() {
@@ -223,16 +224,10 @@
     // 서버에서 타임라인 데이터 가져오기
     async loadTimelineData() {
       this.videoNo = this.getVideoNoFromUrl()
-      if (!this.videoNo) return
+      if (!this.videoNo || !await this.isTimoong()) return
 
       try {
-        if (!await this.isTimoong()) return
-        this.timelines = await this.fetchVideoTimelines(this.videoNo)
-        if (this.timelines.length < 1) return
-        this.timelines = this.timelines.map((timeline) => ({
-          start: timeline.start - 2,
-          end: timeline.end + 2
-        }))
+        await this.setTimelines(this.videoNo)
         this.createController()
       } catch (error) {
         console.error('Failed to fetch timeline data:', error)
@@ -248,26 +243,33 @@
       this.videoElement = document.querySelector('video.webplayer-internal-video')
       if (!this.videoElement) {
         this.retryCount++
-        this.findVideoTimer = setTimeout(() => this.findVideoElement(), 1000)
+        this.findVideoTimer = setTimeout(() => this.findVideoElement(), 500)
       } else {
         await this.loadTimelineData()
-        if (this.controller) {
-          await Promise.all([this.loadAutoPlaySetting(), this.loadAutoMoveSetting()])
-          if (this.isAutoPlayVideo) {
-            this.videoElement.addEventListener('canplay', this.canPlay)
-          }
+        await Promise.all([this.loadAutoPlaySetting(), this.loadAutoMoveSetting()])
+        if (this.isAutoPlayVideo) {
+          let timer = setInterval(() => {
+            if (!this.videoElement) {
+              clearInterval(timer)
+              return
+            }
+            if (this.videoElement.readyState >= 3) {
+              clearInterval(timer)
+              this.canPlay()
+            }
+          }, 100)
         }
       }
     }
 
     canPlay = () => {
-      if (!this.videoElement) return
-      const currentTimeline = this.timelines[this.currentIndex]
-      if (currentTimeline) {
-        this.videoElement.currentTime = currentTimeline.start || 0
-      }
-      this.play()
-      this.videoElement.removeEventListener('canplay', this.canPlay)
+      setTimeout(() => {
+        const currentTimeline = this.timelines[this.currentIndex]
+        if (currentTimeline) {
+          this.videoElement.currentTime = currentTimeline.start
+        }
+        this.play()
+      }, 500)
     }
 
     async loadAutoPlaySetting() {
@@ -362,15 +364,15 @@
       this.controller.appendChild(this.nextButton)
 
       // 구간 표시 (예: 1 / 3)
-      this.timelineIndicator = document.createElement('span')
+      this.timelineIndicator = document.createElement('div')
       this.timelineIndicator.className = 'timeline-indicator'
       this.updateIndicator()
       this.controller.appendChild(this.timelineIndicator)
 
       // 진행 시간 표시 요소 추가
-      this.progressIndicator = document.createElement('span')
+      this.progressIndicator = document.createElement('div')
       this.progressIndicator.className = 'progress-indicator'
-      this.updateProgressIndicator() // 초기 업데이트
+      this.updateProgressIndicator(true) // 초기 업데이트
       this.controller.appendChild(this.progressIndicator)
 
       // 자동 실행행
@@ -391,6 +393,17 @@
       this.autoMoveButton.addEventListener('click', this.toggleAutoMove)
       this.controller.appendChild(this.autoMoveButton)
 
+      // 타임라인 드롭다운 컨테이너 추가
+      this.timelineDropdown = document.createElement('div')
+      this.timelineDropdown.className = 'timeline-dropdown'
+      this.timelineDropdown.style.display = 'none'
+      this.createTimelineList()
+      this.controller.appendChild(this.timelineDropdown)
+
+      // 마우스 이벤트 추가 (컨트롤러 전체에 적용)
+      this.controller.addEventListener('mouseenter', this.showTimelineDropdown)
+      this.controller.addEventListener('mouseleave', this.hideTimelineDropdown)
+
       this.videoElement.parentElement.style.position = 'relative'
       this.videoElement.parentElement.appendChild(this.controller)
       this.videoElement.addEventListener('timeupdate', this.timeupdate)
@@ -407,7 +420,6 @@
       this.checkTimelineEnd()
       this.updateProgressIndicator()
     }
-
 
     toggleAutoPlay = async () => {
       this.isAutoPlayVideo = !this.isAutoPlayVideo
@@ -454,14 +466,15 @@
       }
     }
 
-    updateProgressIndicator() {
-      if (!this.isPlaying || !this.videoElement || !this.timelines.length) return
+    updateProgressIndicator(initial) {
       const currentTimeline = this.timelines[this.currentIndex]
-      if (!currentTimeline) return
-
+      if (!initial && (!this.isPlaying || !this.videoElement || !currentTimeline))  {
+        return
+      }
       let currentTime = this.videoElement.currentTime - currentTimeline.start
-      if (currentTime < 0 || currentTime > currentTimeline.end) currentTime = 0
-
+      if (currentTime < 0 || currentTime > currentTimeline.end) {
+        currentTime = 0
+      }
       const duration = currentTimeline.end - currentTimeline.start
       if (this.progressIndicator) {
         this.progressIndicator.textContent = `${this.formatTime(currentTime)} / ${this.formatTime(duration)}`
@@ -547,6 +560,7 @@
         this.stop()
         return
       }
+      this.activeTimelineList()
       if (this.videoElement) {
         const currentTimeline = this.timelines[this.currentIndex]
         this.isProgrammaticSeek = true
@@ -719,9 +733,12 @@
 
       if (this.timelineIndicator) this.timelineIndicator = null
       if (this.progressIndicator) this.progressIndicator = null
+      if (this.timelineDropdown) this.timelineDropdown = null
 
       if (this.controller) {
         this.controller.removeEventListener('click', this.preventControllerEvent)
+        this.controller.removeEventListener('mouseenter', this.showTimelineDropdown)
+        this.controller.removeEventListener('mouseleave', this.hideTimelineDropdown)
         this.controller.remove()
         this.controller = null
       }
@@ -735,6 +752,45 @@
       this.isProgrammaticSeek = false
       this.isAutoMoveVideo = false
       this.isAutoPlayVideo = false
+    }
+
+    activeTimelineList() {
+      if (this.timelineDropdown) {
+        this.timelineDropdown.querySelectorAll('.timeline-item').forEach((option, idx) => {
+          if (idx === this.currentIndex) {
+            option.classList.add('active')
+          } else {
+            option.classList.remove('active')
+          }
+        })
+      }
+
+    }
+
+    createTimelineList() {
+      this.timelineDropdown.innerHTML = ''
+      this.timelines.forEach((timeline, index) => {
+        const item = document.createElement('div')
+        item.className = 'timeline-item'
+        item.innerHTML = `<div>${index + 1}.</div><div title="${timeline.title}">${timeline.title}</div><div>${this.formatTime(timeline.end - timeline.start)}</div>`
+        item.addEventListener('click', () => {
+          this.currentIndex = index
+          this.moveToCurrentTimeline()
+          if (!this.isPlaying) this.togglePlay()
+        })
+        if (index === this.currentIndex) {
+          item.classList.add('active') // 현재 선택된 타임라인 강조
+        }
+        this.timelineDropdown.appendChild(item)
+      })
+    }
+
+    showTimelineDropdown = () => {
+      this.timelineDropdown.style.display = 'block'
+    }
+    
+    hideTimelineDropdown = () => {
+      this.timelineDropdown.style.display = 'none'
     }
 
     checkContext() {
@@ -757,44 +813,128 @@
       return pattern.test(window.location.href)
     }
 
+    changeUrl() {
+      const isPipMode = this.isPipModeActive()
+      const isValidVideoUrl = this.isValidVideoUrl()
+      const isValidChannelVideosUrl = this.isValidChannelVideosUrl()
+      // let lastPipMode = isPipMode
+
+      if (isValidVideoUrl && !isPipMode) {
+        if (this.getVideoNoFromUrl() !== this.videoNo) {
+          this.init()
+        }
+      } else if (!isValidVideoUrl && !isPipMode) {
+        this.destroy()
+      }
+
+      if (isValidChannelVideosUrl) {
+        setTimeout(() => {
+          this.markPlayableVideos()
+        }, 500)
+      }
+      if (isValidVideoUrl) {
+        setTimeout(() => {
+          this.markPlayableRecommendVideos()
+        }, 500)
+      }
+
+      // if (!isValidVideoUrl && lastPipMode && !isPipMode) {
+      //   this.destroy()
+      //   lastPipMode = false
+      // }
+
+    }
+
     initObserver() {
+      const excludedClasses = ['vod_chatting', 'progress-indicator', 'timeline-dropdown']
       let lastUrl = location.href
-      this.observer = new MutationObserver(debounce(() => {
+      let lastPipMode = false
+
+      // chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      //   if (message.action === 'changeUrl') {
+      //     console.log('Service Worker로부터 메시지:', message.url)
+      //     this.changeUrl()
+      //   }
+      // })
+
+      this.observer = new MutationObserver(debounce((items) => {
+        const isPipMode = this.isPipModeActive()
+        const isValidVideoUrl = this.isValidVideoUrl()
+        const isValidChannelVideosUrl = this.isValidChannelVideosUrl()
+
         if (location.href !== lastUrl) {
           lastUrl = location.href
-          if (this.isValidVideoUrl()) {
-            this.init()
-          } else {
+          lastPipMode = isPipMode
+
+          if (isValidVideoUrl && !isPipMode) {
+            if (this.getVideoNoFromUrl() !== this.videoNo) {
+              this.init()
+            }
+          } else if (!isValidVideoUrl && !isPipMode) {
             this.destroy()
           }
         }
-        if (this.isValidChannelVideosUrl()) {
+
+        if (!isValidVideoUrl && lastPipMode && !isPipMode) {
+          this.destroy()
+          lastPipMode = false
+        }
+
+        const filtered = items.filter((item) => !excludedClasses.some((clazz) => {
+          return typeof item.target.className === 'string' && item.target.className.includes(clazz)
+        }))
+        if (filtered.length < 1) {
+          return
+        }
+
+        if (isValidChannelVideosUrl) {
           this.markPlayableVideos()
         }
-        if (this.isValidVideoUrl()) {
+        if (isValidVideoUrl) {
           this.checkAdPlaying()
           this.markPlayableRecommendVideos()
         }
       }, 500))
+
       this.observer.observe(document, { subtree: true, childList: true })
+    }
+
+    
+    // PIP 모드 감지 메서드
+    isPipModeActive() {
+      // 1. 기존 videoElement가 여전히 DOM에 존재하는지 확인
+      if (this.videoElement && document.body.contains(this.videoElement)) {
+        return !!document.querySelector('section[class*="vod_type_pip__"]')
+      }
+      if (document.pictureInPictureElement) {
+        return true
+      }
+      return false
     }
   }
 
   const wakeup = throttle(() => {
     if (!chrome.runtime) return
-
     return new Promise((resolve) => {
       chrome.runtime.sendMessage({ action: "wakeup" }, async (response) => {
-        console.debug("✅ Receive message:", response)
         resolve(response.status === 'ok')
       })
     })
   }, 10000)
 
+  const getData = () => {
+    if (!chrome.runtime) return
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: "data" }, (response) => {
+        resolve(response)
+      })
+    })
+  }
+
   async function start() {
-    await wakeup()
-    const controller = new VideoTimelineController()
-    await controller.loadVideoData()
+    const data = await getData()
+    const controller = new VideoTimelineController(data)
+    await controller.setVideoData()
     if (controller.isDev || controller.isValidVideoUrl()) {
       controller.init()
     }

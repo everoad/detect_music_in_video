@@ -1,7 +1,10 @@
 
 const CONSTANTS = Object.freeze({
   KEEPALIVE: 'keepalive',
-  TARGET_URL: 'https://chzzk.naver.com/'
+  TARGET_URL: 'https://chzzk.naver.com/',
+  API_KEY: 'S2tZV0dXY2U4MDdaUXlBbHU4UVE=',
+  BASE_URL: 'https://172-237-27-244.ip.linodeusercontent.com',
+  TIMELINE_API_URL: '/api/chzzk/videos/timeline'
 })
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -9,6 +12,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "wakeup") {
     initKeepaliveAlarm()
     sendResponse({ status: "ok" })
+  }
+  if (message.action === 'data') {
+    sendResponse({
+      API_KEY: CONSTANTS.API_KEY,
+      BASE_URL: CONSTANTS.BASE_URL,
+      TIMELINE_API_URL: CONSTANTS.TIMELINE_API_URL
+    })
   }
   return true
 })
@@ -19,9 +29,11 @@ function initKeepaliveAlarm() {
     if (alarm) {
       chrome.alarms.clear(CONSTANTS.KEEPALIVE)
       chrome.alarms.onAlarm.removeListener(onAlarm)
+      // chrome.tabs.onUpdated.removeListener(opUpdatedTabs)
     }
     chrome.alarms.create(CONSTANTS.KEEPALIVE, { periodInMinutes: 0.5 })
     chrome.alarms.onAlarm.addListener(onAlarm)
+    // chrome.tabs.onUpdated.addListener(opUpdatedTabs)
   })
 }
 
@@ -29,6 +41,16 @@ function onAlarm(alarm) {
   if (alarm.name === CONSTANTS.KEEPALIVE) {
     console.debug("✅ Alarm triggered. Keeping service worker alive.")
     checkIfChzzkIsStillOpen()
+  }
+}
+
+function opUpdatedTabs(tabId, changeInfo, tab) {
+  if (changeInfo.url) {
+    console.log('탭 URL 변경:', changeInfo)
+    chrome.tabs.sendMessage(tabId, {
+      action: 'changeUrl',
+      url: changeInfo.url
+    })
   }
 }
 
@@ -40,6 +62,7 @@ function checkIfChzzkIsStillOpen() {
       console.debug("❌ No Chzzk tabs open. Stopping service worker.")
       chrome.alarms.clear(CONSTANTS.KEEPALIVE)
       chrome.alarms.onAlarm.removeListener(onAlarm)
+      // chrome.tabs.onUpdated.removeListener(opUpdatedTabs)
     } else {
       console.debug("✅ Chzzk is still open in at least one tab.")
     }
