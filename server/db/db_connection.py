@@ -3,7 +3,7 @@ from threading import Lock
 
 # 데이터베이스 연결 정보
 DB_CONFIG = {
-    "host": "172.237.27.244",  # 예: "localhost"
+    "host": "localhost",  # 예: "localhost"
     "port": 3306,              # 기본 포트
     "user": "web_reader",
     "password": "!Q@W3e4r",
