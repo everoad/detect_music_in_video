@@ -45,15 +45,43 @@ def extract_audio(video_path, audio_path):
     subprocess.run(command, shell=True)
 
 
-def extract_audio_from_url(video_url: str, audio_output_path: str):
-    try:
-        if file_exists(audio_output_path):
-            return
+
+def download_in_chunks(url, output_file, chunk_size="3M"):
+    """
+    yt-dlp를 사용하여 4MB 단위로 영상을 다운로드하는 함수
+
+    :param url: 다운로드할 영상 URL
+    :param output_file: 최종 저장될 파일명 (예: "output.mp4")
+    :param chunk_size: 다운로드할 청크 크기 (기본값: 4MB)
+    """
+    
+    if file_exists(output_file):
+        return
+
+    temp_file = output_file + ".part"
+    
+    logger.info(f"다운로드 시작... {url}")
+    
+    command = [
+        "yt-dlp",
+        "--no-part",  # 임시 파일 확장자 사용 안 함
+        "--http-chunk-size", chunk_size,  # 4MB 단위
+        "--output", temp_file,  # 임시 저장 파일
+        url,
+    ]
+    subprocess.run(command, shell=True, check=True, text=True)
+    
+    logger.info("다운로드 완료...")
+
+
+
+def extract_audio_from_url(video_url: str, video_output_path: str, audio_output_path: str):
+    try:        
+        download_in_chunks(url=video_url, output_file=video_output_path)
         
-        ffmpeg_path = ffmpeg.get_ffmpeg_exe()
         command = [
             'ffmpeg',
-            "-i", video_url,
+            "-i", video_output_path,
             "-vn",
             "-acodec", "pcm_s16le",
             "-ar", str(sample_rate),
@@ -127,6 +155,7 @@ def iterative_group_and_filter(music_times, min_durations, timestamps, music_pro
 
 def detect_music_sections(audio_path):
     """ YAMNet 모델을 사용하여 음악 구간 탐지 """
+    logger.info("오디오 분석 시작...")
     model = hub.load("https://tfhub.dev/google/yamnet/1")
 
     class_map_path = model.class_map_path().numpy()
@@ -204,6 +233,7 @@ def detect_music_sections(audio_path):
         group for group in grouped_music_times
         if (max(group) - min(group)) > min_music_duration
     ]
+    logger.info("오디오 분석 완료...")
     return final_music_sections
 
 def find_music_segments(video_file):

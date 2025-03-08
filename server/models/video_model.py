@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class VideoAnalyzeRequest(BaseModel):
     video_url: str
@@ -9,9 +9,11 @@ class VideoAnalyzeRequest(BaseModel):
 class Timeline(BaseModel):
     start: float
     end: float
+    title: Optional[str] = None
 
-class VideoAnalyzeResponse(BaseModel):
-    video_no: int
+class VideoModel(BaseModel):
+    videoNo: int
+    deploy: bool
     timelines: List[Timeline]
 
 class TaskResponse(BaseModel):

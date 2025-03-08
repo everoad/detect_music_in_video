@@ -12,11 +12,14 @@ def execute_query(query, params=None):
         return None
 
     try:
+        if params is not None and not isinstance(params, (tuple, list)):
+            params = (params,)
+        
         cursor = conn.cursor()
         cursor.execute(query, params or ())
         
         # SELECT 문인지 확인
-        if cursor.description:  
+        if cursor.description:
             # SELECT문이라면 컬럼명 변환 후 데이터 가져오기
             columns = [to_camel_case(col[0]) for col in cursor.description]
             results = [dict(zip(columns, row)) for row in (cursor.fetchall() or [])]

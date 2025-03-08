@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from routers import chzzk_router
+from pathlib import Path
 
 app = FastAPI(
   root_path="/api",
@@ -15,7 +17,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,  # 허용할 출처 목록
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["Authorization"]   # 허용할 HTTP 헤더
 )
 
@@ -25,8 +27,8 @@ app.include_router(chzzk_router.router)
 async def health_check():
     return {"status": "healthy"}
 
-# app.mount(
-#     "/", 
-#     StaticFiles(directory=Path("../client/dist"), html=True), 
-#     name="static",
-# )
+app.mount(
+    "/", 
+    StaticFiles(directory=Path("../client/dist"), html=True), 
+    name="static",
+)
