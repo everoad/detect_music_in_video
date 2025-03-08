@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from routers import chzzk_router
@@ -27,8 +27,7 @@ app.include_router(chzzk_router.router)
 async def health_check():
     return {"status": "healthy"}
 
-app.mount(
-    "/", 
-    StaticFiles(directory=Path("../client/dist"), html=True), 
-    name="static",
-)
+
+static_dir = Path("../client/dist")
+if static_dir.exists():
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
