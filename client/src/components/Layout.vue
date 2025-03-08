@@ -5,10 +5,10 @@
   <div class="layout">
     <!-- Header -->
     <header class="header">
-      <h1>Chzzk</h1>
+      <h1>다시듣기 관리자</h1>
       <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+        <RouterLink to="/">영상 관리</RouterLink>
+        <RouterLink to="/add">영상 등록</RouterLink>
       </nav>
     </header>
 

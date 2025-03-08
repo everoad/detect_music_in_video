@@ -1,0 +1,236 @@
+/* color palette from <https://github.com/vuejs/theme> */
+:root {
+  --vt-c-white: #ffffff;
+  --vt-c-white-soft: #f8f8f8;
+  --vt-c-white-mute: #f2f2f2;
+
+  --vt-c-black: #181818;
+  --vt-c-black-soft: #222222;
+  --vt-c-black-mute: #282828;
+
+  --vt-c-indigo: #2c3e50;
+
+  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
+  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
+  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
+  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+
+  --vt-c-text-light-1: var(--vt-c-indigo);
+  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+  --vt-c-text-dark-1: var(--vt-c-white);
+  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+}
+
+/* semantic color variables for this project */
+:root {
+  --color-background: var(--vt-c-white);
+  --color-background-soft: var(--vt-c-white-soft);
+  --color-background-mute: var(--vt-c-white-mute);
+
+  --color-border: var(--vt-c-divider-light-2);
+  --color-border-hover: var(--vt-c-divider-light-1);
+
+  --color-heading: var(--vt-c-text-light-1);
+  --color-text: var(--vt-c-text-light-1);
+
+  --section-gap: 160px;
+
+  /* 추가적인 프로젝트 변수 */
+  --color-primary: #357abd; /* 기본 파란색 */
+  --color-primary-hover: #2b6399; /* 조금 더 어두운 파란색 */
+  
+  --color-danger: #d14b4b; /* 기존보다 살짝 더 밝은 붉은색 */
+  --color-danger-hover: #b23a3a; /* 조금 더 어두운 붉은색 */
+  
+  --color-black: #222222; /* 다크 그레이톤 블랙 */
+  --color-black-hover: #333333; /* 약간 더 밝은 블랙 */
+
+
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--vt-c-black);
+    --color-background-soft: var(--vt-c-black-soft);
+    --color-background-mute: var(--vt-c-black-mute);
+
+    --color-border: var(--vt-c-divider-dark-2);
+    --color-border-hover: var(--vt-c-divider-dark-1);
+
+    --color-heading: var(--vt-c-text-dark-1);
+    --color-text: var(--vt-c-text-dark-2);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  line-height: 1.6;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 14px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.video-cotainer {
+  display: flex;
+  gap: 20px;
+}
+
+/* 추가적인 클래스 */
+.video-list {
+  width: 300px;
+  background: var(--color-background);
+  border-right: 1px solid var(--color-border);
+  padding: 20px;
+  overflow-y: auto;
+}
+.video-list-title {
+  padding-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.video-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  justify-content: space-between;
+}
+
+.video-item + .video-item {
+  border-top: 1px solid #eee;
+}
+
+.video-item:hover {
+  background: var(--color-background-mute);
+}
+
+.video-item.selected {
+  background: var(--color-background-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.timeline-editor {
+  flex: 1;
+  background: var(--color-background-soft);
+}
+
+.timeline-control {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 10px;
+  gap: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+}
+
+.table th {
+  background: var(--vt-c-indigo);
+  color: var(--vt-c-white);
+  padding: 12px 15px;
+  font-weight: 600;
+}
+
+.table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table tr:hover {
+  background: var(--color-background-mute);
+}
+
+.table tbody>tr:hover {
+  cursor: move;
+}
+
+.table tr.dragging {
+  opacity: 0.5;
+  background: var(--color-background-mute);
+}
+
+.input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 14px;
+}
+
+.button-primary {
+  background: var(--color-primary);
+  color: var(--vt-c-white);
+}
+
+.button-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.button-danger {
+  background: var(--color-danger);
+  color: var(--vt-c-white);
+}
+
+.button-danger:hover {
+  background: var(--color-danger-hover);
+}
+
+.add-button {
+  width: 100%;
+  padding: 12px;
+}
+
+.text-center {
+  text-align: center;
+}

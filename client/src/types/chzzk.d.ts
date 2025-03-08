@@ -49,8 +49,8 @@ export interface ChzzkVideo {
   liveOpenDate: String
   vodStatus: string
   liveRewindPlaybackJson: string 
-  prevVideo: ChzzkVideo
-  nextVideo: ChzzkVideo
+  prevVideo: ChzzkVideoTimeline
+  nextVideo: ChzzkVideoTimeline
   userAdultStatus: boolean
   adParameter: {
     tag: string
@@ -128,14 +128,23 @@ export interface MyChzzkVideoMetadata {
   baseURL: string
 }
 
+export interface ChzzkTimeline {
+  start: number
+  end: number
+  title?: string
+}
+
+export interface ChzzkVideoTimelineEdit {
+  start: string
+  end: string
+  title?: string
+}
 
 
 export interface ChzzkVideoTimeline {
   videoNo: number
-  timelines: {
-    "start": number
-    "end": number
-  }[]
+  deploy: number
+  timelines: ChzzkTimeline[]
 }
 
 
@@ -172,4 +181,9 @@ export interface ChzzkSegmentTemplate {
   index: string // 인덱스 정보
   initializationAttr: string // 초기화 속성
   bitstreamSwitchingAttr: string // 비트스트림 전환 속성
+}
+
+export interface ChzzkMusicRegister {
+  video_url?: string
+  video_no?: number
 }
