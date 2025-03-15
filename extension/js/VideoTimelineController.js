@@ -27,7 +27,13 @@ class VideoTimelineController {
   }
 
   async handleVideoSelected(event) {
-    this.moveTimelineIndex = event.detail.timelineIndex
+    const {videoNo, timelineIndex} = event.detail
+    if (videoNo !== this.videoNo) {
+      this.moveTimelineIndex = timelineIndex
+    } else {
+      this.currentIndex = timelineIndex
+      this.moveToCurrentTimeline()
+    }
   }
 
   // URL에서 videoNo 추출

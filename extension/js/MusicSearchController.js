@@ -80,24 +80,23 @@ class MusicSearchController {
     if (!query) {
       return
     }
-    this.resultsDropdown.style.display = 'block'
-
+    
     const timelines = await this.getTimelines()
     const filteredTimelines = timelines.filter(timeline =>
       timeline.title.toLowerCase().includes(query)
     )
 
     if (filteredTimelines.length === 0) {
-      this.resultsDropdown.textContent = '검색 결과가 없습니다.'
       return
     }
+    this.resultsDropdown.style.display = 'block'
 
     filteredTimelines.forEach((timeline) => {
       const item = document.createElement('div')
       item.className = 'search-result-item'
       item.innerHTML = `
         <div title="${timeline.title}">${timeline.title}</div>
-        <div>${timeline.publishDate}</div>
+        <div>${formatDate(timeline.publishDate)}</div>
       `
 
       item.addEventListener('click', () => {
@@ -107,6 +106,7 @@ class MusicSearchController {
         // VideoTimelineController에 전달할 커스텀 이벤트 발생
         const event = new CustomEvent('videoSelected', {
           detail: {
+            videoNo: timeline.videoNo,
             timelineIndex: timeline.timelineIndex
           }
         });

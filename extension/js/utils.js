@@ -26,6 +26,11 @@ function formatTime(seconds) {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
+function formatDate(date) {
+  if (!date) return
+  return date.split('T')[0].split('-').join('.')
+}
+
 function getIcon(type) {
   let path = ''
   switch (type) {
