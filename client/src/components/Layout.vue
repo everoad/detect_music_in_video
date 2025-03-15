@@ -19,12 +19,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <p>&copy; 2025 Chzzk. All rights reserved.</p>
-      <nav>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Service</a>
-        <a href="#">Contact Us</a>
-      </nav>
+
     </footer>
   </div>
 </template>
@@ -84,6 +79,7 @@
   padding: 20px;
   text-align: center;
   border-top: 1px solid #444;
+  height: 160px;
 }
 
 .footer p {

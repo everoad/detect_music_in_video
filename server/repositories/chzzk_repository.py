@@ -1,7 +1,11 @@
 from db.db_helper import execute_query
 
 def get_video_timelines():
-    query = "SELECT VIDEO_NO, TIMELINES, DEPLOY FROM CHZZK_VIDEO ORDER BY VIDEO_NO DESC"
+    query = "SELECT VIDEO_NO, TIMELINES, DEPLOY, PUBLISH_DATE FROM CHZZK_VIDEO ORDER BY VIDEO_NO DESC"
+    return execute_query(query)
+
+def get_video_timelines_admin():
+    query = "SELECT VIDEO_NO, TIMELINES, DEPLOY, PUBLISH_DATE FROM CHZZK_VIDEO ORDER BY VIDEO_NO DESC"
     return execute_query(query)
 
 
@@ -10,10 +14,10 @@ def get_video_timelines_by_video_no(videoNo: int):
     return execute_query(query, (videoNo))
     
 
-def add_video_timelines(video_no: int, channel_id: str, timelines: str):
+def add_video_timelines(video_no: int, channel_id: str, timelines: str, publish_date: str):
     """새 사용자 추가"""
-    query = "INSERT INTO CHZZK_VIDEO (VIDEO_NO, CHANNEL_ID, TIMELINES, DEPLOY, CREATED_TIME) VALUES (%s, %s, %s, 0, NOW());"
-    return execute_query(query, (video_no, channel_id, timelines))
+    query = "INSERT INTO CHZZK_VIDEO (VIDEO_NO, CHANNEL_ID, TIMELINES, PUBLISH_DATE, DEPLOY, CREATED_TIME) VALUES (%s, %s, %s, %s, 0, NOW());"
+    return execute_query(query, (video_no, channel_id, timelines, publish_date))
 
 
 def edit_video_timelines(video_no: int, deploy: bool, timelines: str):

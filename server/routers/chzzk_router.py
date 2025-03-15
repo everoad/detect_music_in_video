@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Request, Header, HTTPException
 from httpx import AsyncClient, RequestError
 from models.video_model import VideoAnalyzeRequest, VideoModel, TaskResponse
-from services.chzzk_service import analyze_video, find_video_timelines, save_video_timelines, find_video_timelines_by_video_no
+from services.chzzk_service import analyze_video, find_video_timelines, save_video_timelines, find_video_timelines_by_video_no, find_video_timelines_admin
 from typing import List
 from log.log_config import logger
 
@@ -18,6 +18,13 @@ async def fetch_video_timelines(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid API key")
     return find_video_timelines()
 
+
+@router.get("/videos/timeline_admin")
+async def fetch_video_timelines(authorization: str = Header(...)):
+    if authorization != f"Bearer {VALID_API_KEY}":
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return find_video_timelines_admin()
+
     
 @router.post("/videos/timeline")
 async def update_video_timelines(video: VideoModel, authorization: str = Header(...)):
@@ -32,7 +39,7 @@ async def analyze_video_endpoint(video_data: VideoAnalyzeRequest, background_tas
     if authorization != f"Bearer {VALID_API_KEY}":
         raise HTTPException(status_code=401, detail="Invalid API key")
     
-    background_tasks.add_task(analyze_video, video_data.video_url, video_data.video_no, video_data.channel_id)
+    background_tasks.add_task(analyze_video, video_data.video_url, video_data.video_no, video_data.channel_id, video_data.publish_date)
     
     return {
         "message": "Analysis task started in the background",

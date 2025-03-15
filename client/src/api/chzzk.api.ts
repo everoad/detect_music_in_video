@@ -30,7 +30,7 @@ export async function fetchVideoMetadata(videoId: string, inKey: string): Promis
 }
 
 export async function fetchVideoTimelines(): Promise<ChzzkVideoTimeline[]> {
-  const response = await fetch(`/api/chzzk/videos/timeline`, {
+  const response = await fetch(`/api/chzzk/videos/timeline_admin`, {
     headers: {        
       'Content-Type': 'application/json',
       Authorization: `Bearer ${API_KEY}` 

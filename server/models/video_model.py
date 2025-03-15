@@ -5,6 +5,7 @@ class VideoAnalyzeRequest(BaseModel):
     video_url: str
     video_no: int
     channel_id: str
+    publish_date: str
 
 class Timeline(BaseModel):
     start: float
@@ -14,6 +15,7 @@ class Timeline(BaseModel):
 class VideoModel(BaseModel):
     videoNo: int
     deploy: bool
+    publishDate: str
     timelines: List[Timeline]
 
 class TaskResponse(BaseModel):

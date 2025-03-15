@@ -12,6 +12,7 @@ import os
 from scipy.ndimage import gaussian_filter1d
 import itertools
 from log.log_config import logger
+from sklearn.ensemble import IsolationForest
 
 sample_rate = 16000
 

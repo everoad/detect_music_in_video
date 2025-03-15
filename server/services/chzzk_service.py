@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from libs.music.music import detect_music_sections, extract_audio_from_url
 import json
 from datetime import datetime
-from repositories.chzzk_repository import add_video_timelines, get_video_timelines, edit_video_timelines, get_video_timelines_by_video_no
+from repositories.chzzk_repository import add_video_timelines, get_video_timelines, edit_video_timelines, get_video_timelines_by_video_no, get_video_timelines_admin
 from models.video_model import VideoModel
 from log.log_config import logger
 
@@ -16,6 +16,23 @@ router = APIRouter(
 
 def find_video_timelines():
     videos = get_video_timelines()
+    if videos is None:
+        return []
+    
+    if not isinstance(videos, (list, tuple)):
+        return []
+    
+    for item in videos:
+        try:
+            item["timelines"] = json.loads(item["timelines"])  # 문자열 → JSON 변환
+        except json.JSONDecodeError as e:
+            logger.info(f"JSON 파싱 오류 (video_no={item['video_no']}): {e}")
+    
+    return videos
+
+
+def find_video_timelines_admin():
+    videos = get_video_timelines_admin()
     if videos is None:
         return []
     
@@ -48,7 +65,7 @@ def find_video_timelines_by_video_no(videoNo: int):
     return videos
 
 
-def analyze_video(video_url: str, video_no: str, channel_id: str):
+def analyze_video(video_url: str, video_no: str, channel_id: str, publish_date: str):
     video_output_path = f"{video_no}.mp4"
     audio_output_path = f"{video_no}.wav"
     try:
@@ -60,9 +77,9 @@ def analyze_video(video_url: str, video_no: str, channel_id: str):
         
         if os.path.exists(audio_output_path):
             os.remove(audio_output_path)
-            logger.info(f"🗑️ 파일 삭제 완료: {audio_output_path}")
+            logger.info(f"파일 삭제 완료: {audio_output_path}")
         else:
-            logger.info(f"⚠️ 삭제 실패: 파일이 존재하지 않음 ({audio_output_path})")
+            logger.info(f"삭제 실패: 파일이 존재하지 않음 ({audio_output_path})")
         
         # 3. 결과 변환 (timelines 생성)
         timelines = [
@@ -71,16 +88,16 @@ def analyze_video(video_url: str, video_no: str, channel_id: str):
         ]
         
         # 4. JSON 문자열로 변환
-        timelines_str = json.dumps(timelines)
+        timelines_str = json.dumps(timelines, ensure_ascii=False)
         
-        add_video_timelines(video_no=video_no, channel_id=channel_id, timelines=timelines_str)
+        add_video_timelines(video_no=video_no, channel_id=channel_id, timelines=timelines_str, publish_date=publish_date)
         
     except Exception as e:
         raise Exception(f"Analysis failed: {str(e)}")
 
 def save_video_timelines(video: VideoModel):
     try:
-        timelines_str = json.dumps([timeline.model_dump() for timeline in video.timelines])
+        timelines_str = json.dumps([timeline.model_dump() for timeline in video.timelines], ensure_ascii=False)
         return edit_video_timelines(video_no=video.videoNo, deploy=video.deploy, timelines=timelines_str)
     except Exception as e:
         raise Exception(f"Edit timelines failed: {str(e)}")

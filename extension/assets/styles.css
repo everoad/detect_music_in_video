@@ -192,3 +192,136 @@ div[class^="video_card_container__"] {
 .timeline-item.active:hover {
   background: rgba(0, 255, 163, 0.4);
 }
+
+
+.video-search-container {
+  /* position: fixed; */
+  position: absolute;
+  left: 245px;
+  top: 8.5px;
+
+  width: 301px;
+  background: #333;
+  padding: 5px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  z-index: 11001; /* timeline-controller보다 위에 표시 */
+  cursor: grab;
+}
+
+/* .video-search-container:hover {
+  opacity: 1;
+  transition: opacity 50ms;
+} */
+
+.search-input {
+  width: 100%; /* 컨테이너 전체 너비 활용 */
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 3px;
+  color: white;
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  padding: 8px 10px; /* 패딩 약간 증가 */
+  margin: 0; /* 기존 마진 제거 */
+  outline: none;
+  box-sizing: border-box; /* 패딩 포함 너비 계산 */
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.search-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 12px;
+  width: 28px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.search-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.search-btn:active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.search-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+.search-results-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 301px;
+  background: #333;
+  opacity: 0.8;
+  color: #fff;
+  max-height: 254px;
+  overflow-y: auto;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-results-dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.search-results-dropdown::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.search-results-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  border: 2px solid rgba(30, 30, 30, 0.95);
+}
+
+.search-results-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* styles.css에 추가 */
+.search-result-item {
+  padding: 8px 8px;
+  font-family: 'Arial', sans-serif;
+  font-size: 13px;
+  color: #ddd;
+  transition: background 0.2s ease, color 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.search-result-item > div:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 210px;
+}
+
+.search-result-item > div:last-child {
+  flex: 1;
+  text-align: right;
+}
+
+.search-result-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}

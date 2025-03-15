@@ -144,6 +144,7 @@ export interface ChzzkVideoTimelineEdit {
 export interface ChzzkVideoTimeline {
   videoNo: number
   deploy: number
+  publishDate: str
   timelines: ChzzkTimeline[]
 }
 
@@ -186,4 +187,5 @@ export interface ChzzkSegmentTemplate {
 export interface ChzzkMusicRegister {
   video_url?: string
   video_no?: number
+  publish_date?: string
 }

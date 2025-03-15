@@ -12,7 +12,8 @@
     "https://chzzk.naver.com/*"
   ],
   "background": {
-    "service_worker": "js/background.js"
+    "service_worker": "js/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -20,6 +21,12 @@
         "https://chzzk.naver.com/*"
       ],
       "js": [
+        "js/constants.js",
+        "js/utils.js",
+        "js/storage.js",
+        "js/api.js",
+        "js/MusicSearchController.js",
+        "js/videoTimelineController.js",
         "js/content.js"
       ],
       "css": [

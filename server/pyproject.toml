@@ -108,7 +108,7 @@ dependencies = [
     "tensorflow (>=2.18.0,<3.0.0)",
     "tensorflow-hub (>=0.16.1,<0.17.0)",
     "tensorflow-cpu (==2.18.0)",
-    "yt-dlp (>=2025.2.19,<2026.0.0)"
+    "yt-dlp (>=2025.2.19,<2026.0.0)",
 ]
 
 

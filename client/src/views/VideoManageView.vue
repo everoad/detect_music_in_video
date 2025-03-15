@@ -7,7 +7,7 @@ const editVideo = ref<ChzzkMusicRegister>({})
 const loading = ref<boolean>(false)
 
 const saveVideo = async () => {
-  const { video_no, video_url } = editVideo.value 
+  const { video_no, video_url, publish_date } = editVideo.value 
   if (!video_no || !video_url) {
     alert('입력해 주세요.')
     return
@@ -15,7 +15,8 @@ const saveVideo = async () => {
   try {
     await addVideo({
       video_no: Number(video_no),
-      video_url
+      video_url,
+      publish_date
     })
     isCompleted()
   } catch(e) {
@@ -39,7 +40,7 @@ const loadVideoMetadata = async () => {
 
     const findVideo = await fetchChzzkVideo(video_no)
 
-    const { videoId, inKey } = findVideo
+    const { videoId, inKey, publishDate } = findVideo
     const metadata = await fetchVideoMetadata(videoId, inKey)
     const videoMetadatas = metadata.period
       .flatMap((period) => period.adaptationSet)
@@ -59,6 +60,7 @@ const loadVideoMetadata = async () => {
     if (videoMetadatas.length > 0) {
       editVideo.value.video_url = videoMetadatas[2].baseURL
     }
+    editVideo.value.publish_date = publishDate
     loading.value = false
   }
 }

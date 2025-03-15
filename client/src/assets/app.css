@@ -123,6 +123,18 @@ body {
   display: flex;
   justify-content: space-between;
 }
+.video-item > div:first-child {
+  flex: 1.2;
+}
+
+.video-item > div:nth-child(2n) {
+  flex: 1;
+}
+
+.video-item > div:last-child {
+  width: 30px;
+  text-align: right;
+}
 
 .video-item + .video-item {
   border-top: 1px solid #eee;

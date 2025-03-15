@@ -7,6 +7,13 @@ defineProps<{
 
 defineEmits(['select-video'])
 
+const formatDate = (dateStr: string) => {
+  if (!dateStr) {
+    return ''
+  }
+  return dateStr.split('T')[0].split('-').join('.')
+}
+
 </script>
 
 <template>
@@ -18,8 +25,9 @@ defineEmits(['select-video'])
       @click="$emit('select-video', index)"
       :class="['video-item', { 'selected': selectedIndex === index }]"
     >
-      <span>{{ video.videoNo }}</span>
-      <span>{{ video.deploy ? 'D' : '' }}</span>
+      <div>{{ formatDate(video.publishDate) }}</div>
+      <div>{{ video.videoNo }}</div>
+      <div>{{ video.deploy ? 'D' : '' }}</div>
     </div>
   </div>
 </template>
