@@ -1,4 +1,3 @@
-
 const CONSTANTS = Object.freeze({
   KEEPALIVE: 'keepalive',
   TARGET_URL: 'https://chzzk.naver.com/',
@@ -7,6 +6,7 @@ const CONSTANTS = Object.freeze({
   TIMELINE_API_URL: '/api/chzzk/videos/timeline'
 })
 
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.debug("📩 Receive message :", message)
   if (message.action === "wakeup") {
@@ -14,6 +14,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ status: "ok" })
   }
   if (message.action === 'data') {
+    initKeepaliveAlarm()
     sendResponse({
       API_KEY: CONSTANTS.API_KEY,
       BASE_URL: CONSTANTS.BASE_URL,

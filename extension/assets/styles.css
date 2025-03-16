@@ -199,23 +199,21 @@ div[class^="video_card_container__"] {
   position: absolute;
   left: 245px;
   top: 8.5px;
-
-  width: 301px;
-  background: #333;
+  width: 140px;
+  background: rgb(20, 21, 23);
   padding: 5px;
   border-radius: 5px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   z-index: 11001; /* timeline-controller보다 위에 표시 */
   cursor: grab;
 }
 
-/* .video-search-container:hover {
-  opacity: 1;
-  transition: opacity 50ms;
-} */
+.video-search-container:hover, .video-search-container:has(.search-input:focus) {
+  width: 301px;
+  transition: 100ms;
+}
 
 .search-input {
   width: 100%; /* 컨테이너 전체 너비 활용 */
@@ -264,7 +262,7 @@ div[class^="video_card_container__"] {
 
 .search-results-dropdown {
   position: absolute;
-  top: calc(100% + 5px);
+  top: calc(100% + 2px);
   left: 0;
   width: 301px;
   background: #333;

@@ -42,3 +42,7 @@ const TEXT = Object.freeze({
   AUTOMOVE_ACTIVE: '다음 영상 자동 재생 ON',
   PLAYABLE: '다시듣기'
 })
+
+const EVENTS = Object.freeze({
+  VIDEO_SELECTED: 'videoSelected'
+})

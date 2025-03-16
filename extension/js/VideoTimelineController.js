@@ -16,27 +16,26 @@ class VideoTimelineController {
     this.isAdPlaying = false
     this.observer = null
     this.moveTimelineIndex = null
-
+    
     this.storage = new StorageAdapter()
     this.api = new ApiService(BASE_URL, API_KEY, TIMELINE_API_URL, this.storage)
 
     this.setVideos().then(() => {
       this.initObserver()
     })
-    window.addEventListener('videoSelected', this.handleVideoSelected.bind(this))
+    window.addEventListener(EVENTS.VIDEO_SELECTED, this.handleVideoSelected)
   }
 
-  async handleVideoSelected(event) {
-    const {videoNo, timelineIndex} = event.detail
+  handleVideoSelected = async (event) => {
+    const { videoNo, timelineIndex } = event.detail
     if (videoNo !== this.videoNo) {
-      this.moveTimelineIndex = timelineIndex
+      this.currentIndex = timelineIndex
     } else {
       this.currentIndex = timelineIndex
       this.moveToCurrentTimeline()
     }
   }
 
-  // URL에서 videoNo 추출
   getVideoNoFromUrl() {
     const url = window.location.href
     const match = url.match(/\/video\/(\d+)$/)
@@ -59,33 +58,32 @@ class VideoTimelineController {
     }
   }
 
-  async setTimelines() {
-    await this.setVideos()
-    
+  async setTimelines() {    
     const findVideo = this.videos.find((video) => video.videoNo === this.videoNo)
     const timelines = findVideo ? findVideo.timelines : []
+    const buffer = 2
 
     this.timelines = timelines.map((timeline) => ({
-      start: Math.max(timeline.start - 2, 0),
-      end: timeline.end + 2,
+      start: Math.max(timeline.start - buffer, 0),
+      end: timeline.end + buffer,
       title: timeline.title || '-'
     }))
   }
 
   async initSettings() {
-    await this.setTimelines(this.videoNo)
+    await this.setVideos()
+    await this.setTimelines()
     
-    if (this.moveTimelineIndex) {
-      console.log(this.moveTimelineIndex)
+    if (this.moveTimelineIndex !== null) {
       this.currentIndex = this.moveTimelineIndex
-      this.moveTimelineIndex = null
     }
     
-    this.mount()
-
+    this.createControllerUI()
 
     await Promise.all([this.loadAutoPlaySetting(), this.loadAutoMoveSetting()])
-    if (this.isAutoPlayVideo) {
+    
+    if (this.isAutoPlayVideo || this.moveTimelineIndex !== null) {
+      this.moveTimelineIndex = null
       let timer = setInterval(() => {
         if (!this.videoElement) {
           clearInterval(timer)
@@ -120,7 +118,11 @@ class VideoTimelineController {
       if (currentTimeline) {
         this.videoElement.currentTime = currentTimeline.start
       }
-      this.play()
+      if (this.isAutoPlayVideo) {
+        this.play()
+      } else {
+        this.videoElement.play()
+      }
     }, 500)
   }
 
@@ -133,12 +135,12 @@ class VideoTimelineController {
 
   async loadAutoMoveSetting() {
     this.isAutoMoveVideo = await this.storage.get(STORAGE_KEYS.AUTO_MOVE_VIDEO, false)
-    if (this.autoMoveButton) {
+    if (this.isAutoMoveVideo) {
       this.updateAutoMoveButtonStyle()
     }
   }
 
-  mount() {
+  createControllerUI() {
     if (!this.videoElement || this.timelines.length === 0) return
 
     this.controller = document.createElement('div')
@@ -477,21 +479,22 @@ class VideoTimelineController {
   }
 
   async init() {
-    this.destroy()
+    // this.destroy()
 
     this.videoNo = this.getVideoNoFromUrl()
     const isTimoong = await this.api.isTimoong(this.videoNo)
     if (!this.videoNo || !isTimoong) {
+      return
     }
     
     this.findVideoElement()
-
   }
 
   destroy() {
-    console.log('destroy')
+    console.log('destroy', destroy)
     if (this.findVideoTimer) {
       clearTimeout(this.findVideoTimer)
+      this.findVideoTimer = null
     }
     if (this.videoElement) {
       this.videoElement.removeEventListener('timeupdate', this.timeupdate)
@@ -566,9 +569,10 @@ class VideoTimelineController {
   createTimelineList() {
     this.timelineDropdown.innerHTML = ''
     this.timelines.forEach((timeline, index) => {
+      const { title, start, end } = timeline
       const item = document.createElement('div')
       item.className = 'timeline-item'
-      item.innerHTML = `<div>${index + 1}.</div><div title="${timeline.title}">${timeline.title}</div><div>${formatTime(timeline.end - timeline.start)}</div>`
+      item.innerHTML = `<div>${index + 1}.</div><div title="${title}">${title}</div><div>${formatTime(end - start)}</div>`
       item.addEventListener('click', () => {
         this.currentIndex = index
         this.moveToCurrentTimeline()
@@ -589,10 +593,6 @@ class VideoTimelineController {
     this.timelineDropdown.style.display = 'none'
   }
 
-  checkContext() {
-    return !!(chrome.runtime && chrome.runtime.id)
-  }
-
   isValidVideoUrl() {
     const pattern = /^https:\/\/chzzk\.naver\.com\/video\/.*/
     return pattern.test(location.href)
@@ -603,49 +603,10 @@ class VideoTimelineController {
     return pattern.test(window.location.href)
   }
 
-  changeUrl() {
-    const isPipMode = this.isPipModeActive()
-    const isValidVideoUrl = this.isValidVideoUrl()
-    const isValidChannelVideosUrl = this.isValidChannelVideosUrl()
-    // let lastPipMode = isPipMode
-
-    if (isValidVideoUrl && !isPipMode) {
-      if (this.getVideoNoFromUrl() !== this.videoNo) {
-        this.init()
-      }
-    } else if (!isValidVideoUrl && !isPipMode) {
-      this.destroy()
-    }
-
-    if (isValidChannelVideosUrl) {
-      setTimeout(() => {
-        this.markPlayableVideos()
-      }, 500)
-    }
-    if (isValidVideoUrl) {
-      setTimeout(() => {
-        this.markPlayableRecommendVideos()
-      }, 500)
-    }
-
-    // if (!isValidVideoUrl && lastPipMode && !isPipMode) {
-    //   this.destroy()
-    //   lastPipMode = false
-    // }
-
-  }
-
   initObserver() {
     const excludedClasses = ['vod_chatting', 'progress-indicator', 'timeline-dropdown']
     let lastUrl = location.href
     let lastPipMode = false
-
-    // chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    //   if (message.action === 'changeUrl') {
-    //     console.log('Service Worker로부터 메시지:', message.url)
-    //     this.changeUrl()
-    //   }
-    // })
 
     this.observer = new MutationObserver(debounce((items) => {
       const isPipMode = this.isPipModeActive()
@@ -690,9 +651,7 @@ class VideoTimelineController {
   }
 
   
-  // PIP 모드 감지 메서드
   isPipModeActive() {
-    // 1. 기존 videoElement가 여전히 DOM에 존재하는지 확인
     if (this.videoElement && document.body.contains(this.videoElement)) {
       return !!document.querySelector('section[class*="vod_type_pip__"]')
     }

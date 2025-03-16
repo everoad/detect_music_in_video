@@ -1,4 +1,5 @@
-// videoSearchController.js
+'use strict'
+
 class MusicSearchController {
   constructor(timelineController) { // timelines를 생성자에서 받거나 setter로 설정 가능
     this.timelineController = timelineController
@@ -12,6 +13,28 @@ class MusicSearchController {
     
     this.storage = new StorageAdapter()
     this.createSearchUI()
+    this.initObserver()
+  }
+
+  initObserver() {
+    new MutationObserver(() => {
+      const container = this.getToolbarContainerElmement()
+      if (container) {
+        if (this.searchContainer) {
+          container.append(this.searchContainer)
+        }
+      } else {
+        if (this.searchContainer && this.searchContainer.parentElement) {
+          this.searchContainer.parentElement.removeChild(this.searchContainer)
+        }
+      }
+
+    })
+    .observe(document.querySelector('div[class^="layout_glive__"'), { childList: true })
+  }
+
+  getToolbarContainerElmement() {
+    return document.querySelector('div[class^="toolbar_container__"')
   }
 
   // 검색 UI 생성
@@ -23,7 +46,7 @@ class MusicSearchController {
     // 검색 입력창
     this.searchInput = document.createElement('input')
     this.searchInput.type = 'text'
-    this.searchInput.placeholder = '티뭉 노래 검색...'
+    this.searchInput.placeholder = '티뭉 노래 검색'
     this.searchInput.className = 'search-input'
     this.searchContainer.appendChild(this.searchInput)
 
@@ -34,28 +57,12 @@ class MusicSearchController {
     this.searchContainer.appendChild(this.resultsDropdown)
 
     // 이벤트 리스너 추가
-    this.searchInput.addEventListener('input', this.handleSearch)
-
-    // 드래그 이벤트 추가
-    // this.searchContainer.addEventListener('mousedown', this.startDragging.bind(this))
-    // document.addEventListener('mousemove', this.drag.bind(this))
-    // document.addEventListener('mouseup', this.stopDragging.bind(this))
+    this.searchInput.addEventListener('click', this.handleSearch)
+    this.searchInput.addEventListener('blur', debounce(this.handleBlurSearch, 300))
+    this.searchInput.addEventListener('input', debounce(this.handleSearch, 500))
 
     // 페이지에 추가
-    document.body.appendChild(this.searchContainer)
-
-    // this.centerSearchContainer()
-  }
-
-
-  // 검색 컨테이너를 화면 가운데로 이동
-  centerSearchContainer() {
-
-    this.currentX = 250
-    this.currentY = 7.5
-
-    this.searchContainer.style.left = `${this.currentX}px`
-    this.searchContainer.style.top = `${this.currentY}px`
+    this.getToolbarContainerElmement().appendChild(this.searchContainer)
   }
 
   async getTimelines() {
@@ -67,24 +74,30 @@ class MusicSearchController {
         timelineIndex: idx
       }))
     })
-
   }
 
+  cleanText = (text) => {
+    return text.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase()
+  }
+
+  handleBlurSearch = () => {
+    this.resultsDropdown.innerHTML = ''
+    this.resultsDropdown.style.display = 'none'
+  }
 
   // 검색 처리
-  handleSearch = debounce(async () => {
+  handleSearch = async () => {
     const query = this.searchInput.value.trim().toLowerCase()
-    this.resultsDropdown.innerHTML = '' // 기존 결과 초기화
+    this.resultsDropdown.innerHTML = ''
     this.resultsDropdown.style.display = 'none'
-    
+
     if (!query) {
       return
     }
     
     const timelines = await this.getTimelines()
-    const filteredTimelines = timelines.filter(timeline =>
-      timeline.title.toLowerCase().includes(query)
-    )
+    const filteredTimelines = timelines.filter(timeline => 
+      this.cleanText(timeline.title).includes(this.cleanText(query)))
 
     if (filteredTimelines.length === 0) {
       return
@@ -100,16 +113,16 @@ class MusicSearchController {
       `
 
       item.addEventListener('click', () => {
+
         window.history.pushState({}, document.title, `/video/${timeline.videoNo}`)
         window.dispatchEvent(new Event('popstate'))
 
-        // VideoTimelineController에 전달할 커스텀 이벤트 발생
-        const event = new CustomEvent('videoSelected', {
+        const event = new CustomEvent(EVENTS.VIDEO_SELECTED, {
           detail: {
             videoNo: timeline.videoNo,
             timelineIndex: timeline.timelineIndex
           }
-        });
+        })
         window.dispatchEvent(event)
         this.searchInput.value = ''
         this.resultsDropdown.style.display = 'none'
@@ -119,34 +132,5 @@ class MusicSearchController {
 
 
     })
-  }, 500)
-
-  // 드래그 시작
-  startDragging(e) {
-    this.isDragging = true
-    this.initialX = e.clientX - this.currentX
-    this.initialY = e.clientY - this.currentY 
-    this.searchContainer.style.cursor = 'grabbing'
-  }
-
-  // 드래그 중
-  drag(e) {
-    if (!this.isDragging) return
-    e.preventDefault()
-    this.currentX = e.clientX - this.initialX
-    this.currentY = e.clientY - this.initialY
-    this.searchContainer.style.left = `${this.currentX}px`
-    this.searchContainer.style.top = `${this.currentY}px`
-  }
-
-  // 드래그 종료
-  stopDragging() {
-    this.isDragging = false
-    this.searchContainer.style.cursor = 'grab'
-  }
-
-  // timelines 설정 메서드 (외부에서 데이터 주입용)
-  setTimelines(timelines) {
-    this.timelines = timelines
   }
 }

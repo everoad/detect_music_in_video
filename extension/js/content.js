@@ -1,9 +1,13 @@
+'use strict'
+
 async function start() {
   const data = await sendMessage({ action: 'data' })
-  const controller = new VideoTimelineController(data)
-  if (controller.isValidVideoUrl()) {
-    controller.init()
+  
+  const videoController = new VideoTimelineController(data)
+  if (videoController.isValidVideoUrl()) {
+    videoController.init()
   }
+  
   new MusicSearchController()
 }
 
