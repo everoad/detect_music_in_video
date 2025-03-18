@@ -15,3 +15,10 @@ export function formatDate(dateString: string): string {
     year: 'numeric'
   })
 }
+
+export function cleanText(text: string) {
+  if (!text) {
+    return ''
+  }
+  return text.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase()
+}

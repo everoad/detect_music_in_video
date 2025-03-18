@@ -29,7 +29,7 @@ class VideoTimelineController {
   handleVideoSelected = async (event) => {
     const { videoNo, timelineIndex } = event.detail
     if (videoNo !== this.videoNo) {
-      this.currentIndex = timelineIndex
+      this.moveTimelineIndex = timelineIndex
     } else {
       this.currentIndex = timelineIndex
       this.moveToCurrentTimeline()
@@ -142,6 +142,9 @@ class VideoTimelineController {
 
   createControllerUI() {
     if (!this.videoElement || this.timelines.length === 0) return
+    if (this.controller) {
+      this.controller.remove()
+    }
 
     this.controller = document.createElement('div')
     this.controller.className = 'timeline-controller'
@@ -479,7 +482,7 @@ class VideoTimelineController {
   }
 
   async init() {
-    // this.destroy()
+    this.destroy()
 
     this.videoNo = this.getVideoNoFromUrl()
     const isTimoong = await this.api.isTimoong(this.videoNo)
@@ -491,7 +494,6 @@ class VideoTimelineController {
   }
 
   destroy() {
-    console.log('destroy', destroy)
     if (this.findVideoTimer) {
       clearTimeout(this.findVideoTimer)
       this.findVideoTimer = null

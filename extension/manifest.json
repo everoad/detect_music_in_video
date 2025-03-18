@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "티뭉의 치지직 노래 다시듣기",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "티뭉 치지직 채널 다시보기에서 노래 구간 검색 및 재생하는 플레이어",
   "permissions": [
     "tabs",

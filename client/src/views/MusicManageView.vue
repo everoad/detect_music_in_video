@@ -2,7 +2,9 @@
 import { editVideoTimelines, fetchVideoTimelines } from '@/api/chzzk.api'
 import TimelineEditor from '@/components/admin/TimelineEditor.vue'
 import VideoList from '@/components/admin/VideoList.vue'
+import VideoPlayer from '@/components/admin/VideoPlayer.vue'
 import type { ChzzkTimeline, ChzzkVideoTimeline } from '@/types/chzzk'
+import { cleanText } from '@/utils/common-utils'
 import { computed, onMounted, ref } from 'vue'
 
 
@@ -12,7 +14,7 @@ const selectedVideoIndex = ref<number>(-1)
 
 const selectedVideo = computed<ChzzkVideoTimeline | null>(() => {
   return selectedVideoIndex.value !== -1 ? videos.value[selectedVideoIndex.value] : null
-});
+})
 
 function selectVideo(index: number) {
   selectedVideoIndex.value = index
@@ -44,6 +46,11 @@ onMounted(async () => {
 <template>
   <div class="video-cotainer">
     <VideoList :videos="videos" @select-video="selectVideo" :selected-index="selectedVideoIndex" />
-    <TimelineEditor :selected-video="selectedVideo" @update-video="updateVideo" @save-video="saveVideoTimelines" />
+    <TimelineEditor 
+      :selected-video="selectedVideo"
+      :videos="videos"
+      @update-video="updateVideo" 
+      @save-video="saveVideoTimelines"
+    />
   </div>
 </template>

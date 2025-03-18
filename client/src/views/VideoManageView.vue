@@ -58,7 +58,8 @@ const loadVideoMetadata = async () => {
       .sort((a, b) => b.height - a.height)
     
     if (videoMetadatas.length > 0) {
-      editVideo.value.video_url = videoMetadatas[2].baseURL
+      console.log(videoMetadatas)
+      editVideo.value.video_url = videoMetadatas[1].baseURL
     }
     editVideo.value.publish_date = publishDate
     loading.value = false

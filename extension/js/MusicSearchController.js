@@ -77,6 +77,9 @@ class MusicSearchController {
   }
 
   cleanText = (text) => {
+    if (!text) {
+      return ''
+    }
     return text.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase()
   }
 

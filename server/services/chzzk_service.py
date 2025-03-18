@@ -7,7 +7,7 @@ from repositories.chzzk_repository import add_video_timelines, get_video_timelin
 from models.video_model import VideoModel
 from log.log_config import logger
 
-main_dir = '/home/beomjk/chzzk/'
+main_dir = 'D:/workspace/detect_music/client/src/assets'
 
 router = APIRouter(
     prefix="/chzzk",
@@ -66,8 +66,8 @@ def find_video_timelines_by_video_no(videoNo: int):
 
 
 def analyze_video(video_url: str, video_no: str, channel_id: str, publish_date: str):
-    video_output_path = f"{video_no}.mp4"
-    audio_output_path = f"{video_no}.wav"
+    video_output_path = f"{main_dir}/{video_no}.mp4"
+    audio_output_path = f"{main_dir}/{video_no}.wav"
     try:
         # 1. 오디오 추출
         extract_audio_from_url(video_url, video_output_path, audio_output_path)
