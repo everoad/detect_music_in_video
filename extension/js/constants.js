@@ -15,12 +15,14 @@ const STORAGE_KEYS = Object.freeze({
   AUTO_MOVE_VIDEO: 'automove',
   AUTOPLAY: 'autoplay',
   VIDEOS: 'videos',
-  LAST_CALL_API_TIME: 'lastCallApiTime'
+  Y_VIDOES: 'y_videos',
+  LAST_CALL_API_TIME: 'lastCallApiTime',
+  Y_LAST_CALL_API_TIME: 'y_lastCallApiTime'
 })
 
 const TIMOONG_CHANNEL_ID = '26253bf7ed6b95832c40f4f43f6d049d'
 
-const CHZZK_CONSTANTS = Object.freeze({
+const API_CONSTANTS = Object.freeze({
   CHZZK_VIDEO_API_URL: 'https://api.chzzk.naver.com/service/v3/videos/',
   CHZZK_VIDEO_LIST_API_URL: `https://api.chzzk.naver.com/service/v1/channels/${TIMOONG_CHANNEL_ID}/videos?sortType=LATEST&pagingType=PAGE&size=40&publishDateAt=&videoType=`,
   CHZZK_VIDEO_PAGE_URL: 'https://chzzk.naver.com/video/'
@@ -44,5 +46,6 @@ const TEXT = Object.freeze({
 })
 
 const EVENTS = Object.freeze({
-  VIDEO_SELECTED: 'videoSelected'
+  VIDEO_SELECTED: 'videoSelected',
+  VIDEO_STOP: 'videoStop'
 })

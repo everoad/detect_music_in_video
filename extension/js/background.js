@@ -2,8 +2,9 @@ const CONSTANTS = Object.freeze({
   KEEPALIVE: 'keepalive',
   TARGET_URL: 'https://chzzk.naver.com/',
   API_KEY: 'S2tZV0dXY2U4MDdaUXlBbHU4UVE=',
-  BASE_URL: 'https://172-237-27-244.ip.linodeusercontent.com',
-  TIMELINE_API_URL: '/api/chzzk/videos/timeline'
+  BASE_URL: 'http://localhost:8000',
+  TIMELINE_API_URL: '/api/chzzk/videos/timeline',
+  YOUTUBE_API_URL: '/api/youtube/videos'
 })
 
 
@@ -18,7 +19,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({
       API_KEY: CONSTANTS.API_KEY,
       BASE_URL: CONSTANTS.BASE_URL,
-      TIMELINE_API_URL: CONSTANTS.TIMELINE_API_URL
+      TIMELINE_API_URL: CONSTANTS.TIMELINE_API_URL,
+      YOUTUBE_API_URL: CONSTANTS.YOUTUBE_API_URL
     })
   }
   return true

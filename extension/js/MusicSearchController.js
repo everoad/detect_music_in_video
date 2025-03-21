@@ -1,17 +1,16 @@
 'use strict'
 
 class MusicSearchController {
-  constructor(timelineController) { // timelines를 생성자에서 받거나 setter로 설정 가능
-    this.timelineController = timelineController
-
+  constructor(api, storage) { // timelines를 생성자에서 받거나 setter로 설정 가능
     this.searchContainer = null
     this.isDragging = false
     this.currentX = 0
     this.currentY = 0
     this.initialX = 0
     this.initialY = 0
-    
-    this.storage = new StorageAdapter()
+    this.youtubeVideos = []
+    this.api = api
+    this.storage = storage
     this.createSearchUI()
     this.initObserver()
   }
@@ -67,13 +66,16 @@ class MusicSearchController {
 
   async getTimelines() {
     const videos = await this.storage.get(STORAGE_KEYS.VIDEOS, [])
-    return videos.flatMap((video) => {
+    const y_videos = await this.storage.get(STORAGE_KEYS.Y_VIDOES, [])
+
+    const chzzkTimelines = videos.flatMap((video) => {
       return video.timelines.map((timeline, idx) => ({
         ...timeline,
         ...video,
         timelineIndex: idx
       }))
     })
+    return [...y_videos, ...chzzkTimelines]
   }
 
   cleanText = (text) => {
@@ -110,26 +112,41 @@ class MusicSearchController {
     filteredTimelines.forEach((timeline) => {
       const item = document.createElement('div')
       item.className = 'search-result-item'
-      item.innerHTML = `
-        <div title="${timeline.title}">${timeline.title}</div>
-        <div>${formatDate(timeline.publishDate)}</div>
-      `
+      if (timeline.url) {
+        item.innerHTML = `
+          <div title="${timeline.title}">${timeline.title}</div>
+          <div>Youtube</div>
+        `
+        item.addEventListener('click',() => {
+          window.open(timeline.url, "_blank")
 
-      item.addEventListener('click', () => {
-
-        window.history.pushState({}, document.title, `/video/${timeline.videoNo}`)
-        window.dispatchEvent(new Event('popstate'))
-
-        const event = new CustomEvent(EVENTS.VIDEO_SELECTED, {
-          detail: {
-            videoNo: timeline.videoNo,
-            timelineIndex: timeline.timelineIndex
-          }
+          const event = new CustomEvent(EVENTS.VIDEO_STOP)
+          window.dispatchEvent(event)
+          this.searchInput.value = ''
+          this.resultsDropdown.style.display = 'none'
         })
-        window.dispatchEvent(event)
-        this.searchInput.value = ''
-        this.resultsDropdown.style.display = 'none'
-      })
+      } else {
+        item.innerHTML = `
+          <div title="${timeline.title}">${timeline.title}</div>
+          <div>${formatDate(timeline.publishDate)}</div>
+        `
+        item.addEventListener('click', () => {
+          window.history.pushState({}, document.title, `/video/${timeline.videoNo}`)
+          window.dispatchEvent(new Event('popstate'))
+  
+          const event = new CustomEvent(EVENTS.VIDEO_SELECTED, {
+            detail: {
+              videoNo: timeline.videoNo,
+              timelineIndex: timeline.timelineIndex
+            }
+          })
+          window.dispatchEvent(event)
+          this.searchInput.value = ''
+          this.resultsDropdown.style.display = 'none'
+        })
+      }
+
+
 
       this.resultsDropdown.appendChild(item)
 

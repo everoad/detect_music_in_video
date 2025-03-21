@@ -1,7 +1,7 @@
 'use strict'
 
 class VideoTimelineController {
-  constructor({ API_KEY, BASE_URL, TIMELINE_API_URL }) {
+  constructor(api, storage) {
     this.videoElement = null
     this.controller = null
     this.timelines = []
@@ -17,13 +17,14 @@ class VideoTimelineController {
     this.observer = null
     this.moveTimelineIndex = null
     
-    this.storage = new StorageAdapter()
-    this.api = new ApiService(BASE_URL, API_KEY, TIMELINE_API_URL, this.storage)
+    this.storage = storage
+    this.api = api
 
     this.setVideos().then(() => {
       this.initObserver()
     })
     window.addEventListener(EVENTS.VIDEO_SELECTED, this.handleVideoSelected)
+    window.addEventListener(EVENTS.VIDEO_STOP, this.stop)
   }
 
   handleVideoSelected = async (event) => {
@@ -57,6 +58,9 @@ class VideoTimelineController {
       this.videos = await this.api.fetchVideos()
     }
   }
+
+
+
 
   async setTimelines() {    
     const findVideo = this.videos.find((video) => video.videoNo === this.videoNo)
