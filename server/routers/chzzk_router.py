@@ -54,9 +54,6 @@ async def check_completed_analyze_process(videoNo: int, authorization: str = Hea
     return find_video_timelines_by_video_no(videoNo=videoNo)
     
     
-    
-
-
 @router.get("/videos/{video_no}")
 async def getVideo(video_no: str, request: Request, authorization: str = Header(...)):
     if authorization != f"Bearer {VALID_API_KEY}":

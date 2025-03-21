@@ -7,7 +7,7 @@ from repositories.chzzk_repository import add_video_timelines, get_video_timelin
 from models.video_model import VideoModel
 from log.log_config import logger
 
-main_dir = 'D:/workspace/detect_music/client/src/assets'
+main_dir = 'D:/workspace/detect_music/client/public/videos'
 
 router = APIRouter(
     prefix="/chzzk",

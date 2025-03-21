@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routers import chzzk_router
+from routers import chzzk_router, youtube_router
 from pathlib import Path
 
 app = FastAPI(
@@ -22,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(chzzk_router.router)
+app.include_router(youtube_router.router)
 
 @app.get("/health")
 async def health_check():

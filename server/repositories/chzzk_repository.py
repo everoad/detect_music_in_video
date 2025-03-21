@@ -1,7 +1,13 @@
 from db.db_helper import execute_query
 
 def get_video_timelines():
-    query = "SELECT VIDEO_NO, TIMELINES, DEPLOY, PUBLISH_DATE FROM CHZZK_VIDEO ORDER BY VIDEO_NO DESC"
+    query = """
+        SELECT VIDEO_NO, TIMELINES, DEPLOY, PUBLISH_DATE FROM CHZZK_VIDEO
+        WHERE PUBLISH_DATE >= DATE_SUB(DATE(NOW()), INTERVAL 60 DAY)
+            AND PUBLISH_DATE <= DATE_SUB(DATE(NOW()), INTERVAL 6 DAY)
+            AND DEPLOY = 1
+        ORDER BY VIDEO_NO DESC
+    """
     return execute_query(query)
 
 def get_video_timelines_admin():
@@ -21,6 +27,5 @@ def add_video_timelines(video_no: int, channel_id: str, timelines: str, publish_
 
 
 def edit_video_timelines(video_no: int, deploy: bool, timelines: str):
-    print(f"no: {video_no}, timelines: {timelines}")
     query = "UPDATE CHZZK_VIDEO SET TIMELINES = %s, DEPLOY = %s WHERE VIDEO_NO = %s;"
     return execute_query(query, (timelines, deploy, video_no))
